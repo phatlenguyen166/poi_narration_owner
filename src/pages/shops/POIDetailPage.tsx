@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Edit, Trash2, Pause, Play, MapPin, Mic, Radio } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Circle } from 'react-leaflet'
@@ -24,10 +24,14 @@ L.Icon.Default.mergeOptions({
 export default function POIDetailPage() {
   const { shopId, poiId } = useParams()
   const navigate = useNavigate()
-  const { pois, updatePOI, deletePOI } = useShopStore()
+  const { pois, fetchShops, updatePOI, deletePOI } = useShopStore()
   const [showDelete, setShowDelete] = useState(false)
   const [activeLang, setActiveLang] = useState('vi')
   const [speaking, setSpeaking] = useState(false)
+
+  useEffect(() => {
+    void fetchShops()
+  }, [fetchShops])
 
   const poi = pois.find((p) => p.id === poiId && p.shopId === shopId)
 
@@ -44,14 +48,24 @@ export default function POIDetailPage() {
   const activeContent = poi.contents.find((c) => c.language === activeLang) || poi.contents[0]
 
   const handleDelete = () => {
-    deletePOI(poi.id)
-    toast.success('Đã xóa POI')
-    navigate(`/shops`)
+    void deletePOI(poi.id)
+      .then(() => {
+        toast.success('Đã xóa POI')
+        navigate('/shops')
+      })
+      .catch(() => {
+        toast.error('Không thể xóa POI')
+      })
   }
 
   const handleToggleActive = () => {
-    updatePOI(poi.id, { isActive: !poi.isActive })
-    toast.success(poi.isActive ? 'Đã tạm dừng POI' : 'POI đang hoạt động')
+    void updatePOI(poi.id, { isActive: !poi.isActive })
+      .then(() => {
+        toast.success(poi.isActive ? 'Đã tạm dừng POI' : 'POI đang hoạt động')
+      })
+      .catch(() => {
+        toast.error('Không thể cập nhật trạng thái POI')
+      })
   }
 
   const handleTTS = () => {

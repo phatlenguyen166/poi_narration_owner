@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { Bell, Moon, Sun, Menu } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
-import { mockNotifications } from '@/data/mock'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/utils'
+import { useShopStore } from '@/stores/shopStore'
 
 interface BreadcrumbItem {
   label: string
@@ -17,9 +17,10 @@ interface HeaderProps {
 
 export function Header({ breadcrumbs = [] }: HeaderProps) {
   const { darkMode, toggleDarkMode, toggleSidebar } = useUIStore()
+  const { notifications } = useShopStore()
   const [showNotif, setShowNotif] = useState(false)
   const navigate = useNavigate()
-  const unread = mockNotifications.filter((n) => !n.read).length
+  const unread = notifications.filter((n) => !n.read).length
 
   return (
     <header className="h-14 flex items-center justify-between px-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none flex-shrink-0">
@@ -83,7 +84,12 @@ export function Header({ breadcrumbs = [] }: HeaderProps) {
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Thông báo</h3>
                 </div>
                 <div className="max-h-72 overflow-y-auto">
-                  {mockNotifications.map((n) => (
+                  {notifications.length === 0 && (
+                    <div className="px-4 py-6 text-sm text-center text-gray-400 dark:text-gray-500">
+                      Chưa có thông báo hệ thống.
+                    </div>
+                  )}
+                  {notifications.map((n) => (
                     <div
                       key={n.id}
                       className={cn(

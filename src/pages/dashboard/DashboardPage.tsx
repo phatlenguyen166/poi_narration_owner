@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Headphones, Store, TrendingUp, Activity,
@@ -11,21 +12,26 @@ import { Badge } from '@/components/ui/Badge'
 import { Toggle } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useShopStore } from '@/stores/shopStore'
-import { mockDailyStats, mockNotifications, CATEGORIES } from '@/data/mock'
+import { CATEGORIES } from '@/data/mock'
 import { formatNumber, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 const categoryLabel = (c: string) => CATEGORIES.find((x) => x.value === c)?.label ?? c
 
 export default function DashboardPage() {
-  const { shops, toggleShopActive } = useShopStore()
+  const { shops, dashboard, notifications, fetchDashboard, fetchShops, toggleShopActive } = useShopStore()
   const navigate = useNavigate()
 
-  const last7 = mockDailyStats.slice(-7)
-  const todayPlays = last7[last7.length - 1]?.plays ?? 0
-  const weekPlays = last7.reduce((s, d) => s + d.plays, 0)
-  const monthPlays = mockDailyStats.reduce((s, d) => s + d.plays, 0)
-  const activePOIs = shops.reduce((s, sh) => s + (sh.isActive ? sh.poiCount : 0), 0)
+  useEffect(() => {
+    void fetchDashboard()
+    void fetchShops()
+  }, [fetchDashboard, fetchShops])
+
+  const last7 = dashboard.recentDailyPlays.slice(-7)
+  const todayPlays = dashboard.todayPlays
+  const weekPlays = dashboard.weekPlays
+  const monthPlays = dashboard.monthPlays
+  const activePOIs = dashboard.activePoiCount
 
   const topPOIs = [...shops]
     .sort((a, b) => b.poiCount - a.poiCount)
@@ -34,7 +40,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* System banners */}
-      {mockNotifications.filter((n) => !n.read).slice(0, 1).map((n) => (
+      {notifications.filter((n) => !n.read).slice(0, 1).map((n) => (
         <div
           key={n.id}
           className={cn(
@@ -64,24 +70,18 @@ export default function DashboardPage() {
           label="Lượt nghe hôm nay"
           value={formatNumber(todayPlays)}
           icon={<Headphones size={20} />}
-          trend="+12% so với hôm qua"
-          trendUp
           color="indigo"
         />
         <StatCard
           label="Lượt nghe tuần này"
           value={formatNumber(weekPlays)}
           icon={<TrendingUp size={20} />}
-          trend="+8% so với tuần trước"
-          trendUp
           color="emerald"
         />
         <StatCard
           label="Lượt nghe tháng này"
           value={formatNumber(monthPlays)}
           icon={<Activity size={20} />}
-          trend="-3% so với tháng trước"
-          trendUp={false}
           color="amber"
         />
         <StatCard
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                   <td className="py-2.5">
                     <Toggle
                       checked={shop.isActive}
-                      onChange={() => toggleShopActive(shop.id)}
+                      onChange={() => void toggleShopActive(shop.id)}
                     />
                   </td>
                 </tr>

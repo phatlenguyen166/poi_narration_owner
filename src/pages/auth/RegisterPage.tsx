@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Store } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -22,7 +22,8 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
-  const { login } = useAuthStore()
+  const { register: registerOwner } = useAuthStore()
+  const location = useLocation()
   const navigate = useNavigate()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -30,10 +31,18 @@ export default function RegisterPage() {
   })
 
   const onSubmit = async (data: FormData) => {
-    await new Promise((r) => setTimeout(r, 800))
-    await login(data.email, data.password)
+    await registerOwner({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    })
     toast.success('Đăng ký thành công! Chào mừng bạn!')
-    navigate('/onboarding')
+    navigate('/shops/new', {
+      state: {
+        initialShopName: data.shopName,
+        redirectFrom: location.pathname,
+      },
+    })
   }
 
   return (

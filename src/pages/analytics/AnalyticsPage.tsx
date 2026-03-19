@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -7,7 +7,6 @@ import { Headphones, Clock, Users, ChevronLeft } from 'lucide-react'
 import { StatCard } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useShopStore } from '@/stores/shopStore'
-import { mockPlayLogs, mockDailyStats, LANGUAGES } from '@/data/mock'
 import { formatNumber, formatDuration, formatDate, formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -16,49 +15,60 @@ type Range = '7d' | '30d' | 'custom'
 export default function AnalyticsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { shops, pois } = useShopStore()
+  const { shops, pois, analyticsByShop, fetchAnalytics, fetchShops } = useShopStore()
   const shop = shops.find((s) => s.id === id)
   const [range, setRange] = useState<Range>('7d')
+  const analytics = id ? analyticsByShop[id] : undefined
 
   const shopPOIs = pois.filter((p) => p.shopId === id)
 
   const days = range === '7d' ? 7 : 30
-  const chartData = mockDailyStats.slice(-days)
+  const chartData = (analytics?.dailyPlays ?? []).slice(-days)
 
-  const totalPlays = chartData.reduce((s, d) => s + d.plays, 0)
-  const avgDuration = Math.floor(
-    mockPlayLogs.reduce((s, l) => s + l.duration, 0) / mockPlayLogs.length
-  )
+  const totalPlays = analytics?.summary.totalPlays ?? 0
+  const avgDuration = analytics?.summary.averageDurationSeconds ?? 0
+  const uniqueVisitors = analytics?.summary.uniqueVisitors ?? 0
 
-  // Language breakdown
+  useEffect(() => {
+    void fetchShops()
+  }, [fetchShops])
+
+  useEffect(() => {
+    if (id) {
+      void fetchAnalytics(id).catch(() => undefined)
+    }
+  }, [fetchAnalytics, id])
+
   const langData = useMemo(() => {
-    const map: Record<string, number> = {}
-    mockPlayLogs.forEach((l) => {
-      map[l.language] = (map[l.language] || 0) + 1
-    })
-    return Object.entries(map).map(([code, count]) => {
-      const lang = LANGUAGES.find((l) => l.code === code)
-      return { name: lang ? `${lang.flag} ${lang.label}` : code, count }
-    })
-  }, [])
+    return analytics?.languageBreakdown ?? []
+  }, [analytics?.languageBreakdown])
 
-  // Heatmap data (7 days x 24 hours)
   const heatmapData = useMemo(() => {
     const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+    const matrix: Record<string, Record<number, number>> = {}
+
+    ;(analytics?.recentLogs ?? []).forEach((log) => {
+      const playedAt = new Date(log.playedAt)
+      const day = days[playedAt.getDay()]
+      const hour = playedAt.getHours()
+      matrix[day] ??= {}
+      matrix[day][hour] = (matrix[day][hour] ?? 0) + 1
+    })
+
     const data: { day: string; hour: number; plays: number }[] = []
     for (let d = 0; d < 7; d++) {
       for (let h = 0; h < 24; h++) {
         data.push({
           day: days[d],
           hour: h,
-          plays: Math.floor(Math.random() * 20),
+          plays: matrix[days[d]]?.[h] ?? 0,
         })
       }
     }
     return data
-  }, [])
+  }, [analytics?.recentLogs])
 
-  const maxHeatmap = Math.max(...heatmapData.map((d) => d.plays))
+  const maxHeatmap = Math.max(1, ...heatmapData.map((d) => d.plays))
 
   if (!shop) {
     return (
@@ -102,8 +112,6 @@ export default function AnalyticsPage() {
           label="Tổng lượt nghe"
           value={formatNumber(totalPlays)}
           icon={<Headphones size={20} />}
-          trend="+15% so với kỳ trước"
-          trendUp
           color="indigo"
         />
         <StatCard
@@ -114,7 +122,7 @@ export default function AnalyticsPage() {
         />
         <StatCard
           label="Khách unique"
-          value={formatNumber(Math.floor(totalPlays * 0.7))}
+          value={formatNumber(uniqueVisitors)}
           icon={<Users size={20} />}
           color="amber"
         />
@@ -237,9 +245,8 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {mockPlayLogs.slice(0, 15).map((log) => {
-                const poi = shopPOIs.find((p) => p.id === log.poiId) || pois[0]
-                const lang = LANGUAGES.find((l) => l.code === log.language)
+                {(analytics?.recentLogs ?? []).slice(0, 15).map((log) => {
+                  const poi = shopPOIs.find((p) => p.id === log.poiId) || pois[0]
                 return (
                   <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">
@@ -249,8 +256,7 @@ export default function AnalyticsPage() {
                       {poi?.name || '-'}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-base">{lang?.flag}</span>
-                      <span className="text-gray-600 dark:text-gray-400 text-xs ml-1">{lang?.label}</span>
+                      <span className="text-gray-600 dark:text-gray-400 text-xs">{log.language.toUpperCase()}</span>
                     </td>
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-400">
                       {formatDuration(log.duration)}

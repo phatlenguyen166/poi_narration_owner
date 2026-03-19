@@ -112,10 +112,9 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          {/* Demo hint */}
-          <div className="mt-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
-            <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
-              <strong>Demo:</strong> Nhập bất kỳ email + mật khẩu (≥6 ký tự) để đăng nhập
+          <div className="mt-6 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
+            <p className="text-xs text-indigo-700 dark:text-indigo-300 text-center">
+              Đăng nhập bằng tài khoản owner đã đăng ký trên backend.
             </p>
           </div>
         </div>

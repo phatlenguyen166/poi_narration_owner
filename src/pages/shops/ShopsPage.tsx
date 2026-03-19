@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, MapPin, Edit, BarChart2, Trash2, QrCode, Store } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -75,10 +75,14 @@ function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
 }
 
 export default function ShopsPage() {
-  const { shops, deleteShop, toggleShopActive } = useShopStore()
+  const { shops, fetchShops, deleteShop, toggleShopActive, isLoading } = useShopStore()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+
+  useEffect(() => {
+    void fetchShops()
+  }, [fetchShops])
 
   const filtered = shops.filter(
     (s) =>
@@ -88,9 +92,14 @@ export default function ShopsPage() {
 
   const handleDelete = () => {
     if (deleteTarget) {
-      deleteShop(deleteTarget)
-      toast.success('Đã xóa gian hàng')
-      setDeleteTarget(null)
+      void deleteShop(deleteTarget)
+        .then(() => {
+          toast.success('Đã xóa gian hàng')
+          setDeleteTarget(null)
+        })
+        .catch(() => {
+          toast.error('Không thể xóa gian hàng')
+        })
     }
   }
 
@@ -118,7 +127,11 @@ export default function ShopsPage() {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p className="font-medium">Đang tải dữ liệu gian hàng...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <Store size={48} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">Không tìm thấy gian hàng</p>
@@ -132,10 +145,13 @@ export default function ShopsPage() {
               shop={shop}
               onEdit={() => navigate(`/shops/${shop.id}/edit`)}
               onDelete={() => setDeleteTarget(shop.id)}
-              onToggle={() => {
-                toggleShopActive(shop.id)
-                toast.success(`Gian hàng ${shop.isActive ? 'đã tạm dừng' : 'đang hoạt động'}`)
-              }}
+              onToggle={() => void toggleShopActive(shop.id)
+                .then(() => {
+                  toast.success(`Gian hàng ${shop.isActive ? 'đã tạm dừng' : 'đang hoạt động'}`)
+                })
+                .catch(() => {
+                  toast.error('Không thể cập nhật trạng thái gian hàng')
+                })}
               onAnalytics={() => navigate(`/shops/${shop.id}/analytics`)}
               onQR={() => navigate(`/shops/${shop.id}/qr`)}
             />

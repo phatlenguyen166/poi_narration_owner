@@ -44,7 +44,7 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
     const file = e.target.files?.[0]
     if (file) {
       const url = URL.createObjectURL(file)
-      updateContent(activeLang, { audioUrl: url })
+      updateContent(activeLang, { audioUrl: url, audioFile: file })
     }
   }
 
@@ -183,7 +183,7 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
                   variant="ghost"
                   size="sm"
                   className="text-red-500"
-                  onClick={() => updateContent(activeLang, { audioUrl: undefined })}
+                  onClick={() => updateContent(activeLang, { audioUrl: undefined, audioFile: undefined, audioAssetId: undefined })}
                 >
                   <Trash2 size={14} />
                 </Button>

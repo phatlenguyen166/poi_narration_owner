@@ -1,15 +1,19 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart2, ExternalLink, Headphones, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useShopStore } from '@/stores/shopStore'
 import { StatCard } from '@/components/ui/Card'
-import { mockDailyStats } from '@/data/mock'
 import { formatNumber } from '@/lib/utils'
 
 export default function GlobalAnalyticsPage() {
-  const { shops } = useShopStore()
+  const { shops, dashboard, fetchDashboard, fetchShops } = useShopStore()
   const navigate = useNavigate()
-  const totalPlays = mockDailyStats.slice(-30).reduce((s, d) => s + d.plays, 0)
+
+  useEffect(() => {
+    void fetchDashboard()
+    void fetchShops()
+  }, [fetchDashboard, fetchShops])
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -21,7 +25,7 @@ export default function GlobalAnalyticsPage() {
       <div className="grid grid-cols-2 gap-4">
         <StatCard
           label="Tổng lượt nghe (30 ngày)"
-          value={formatNumber(totalPlays)}
+          value={formatNumber(dashboard.monthPlays)}
           icon={<Headphones size={20} />}
           color="indigo"
         />

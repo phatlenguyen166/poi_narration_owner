@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react'
 import { Download, Copy, Printer, MapPin, Store, Check } from 'lucide-react'
@@ -11,9 +11,19 @@ import toast from 'react-hot-toast'
 export default function QRCodePage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { shops } = useShopStore()
+  const { shops, fetchShops, fetchQrCode, qrCodes } = useShopStore()
   const shop = shops.find((s) => s.id === id)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    void fetchShops()
+  }, [fetchShops])
+
+  useEffect(() => {
+    if (id) {
+      void fetchQrCode(id).catch(() => undefined)
+    }
+  }, [fetchQrCode, id])
 
   if (!shop) {
     return (
@@ -24,7 +34,7 @@ export default function QRCodePage() {
     )
   }
 
-  const qrValue = `https://audio-tour.app/visit/${shop.id}`
+  const qrValue = qrCodes[shop.id]?.resolvedUrl || ''
   const categoryLabel = CATEGORIES.find((c) => c.value === shop.category)?.label ?? shop.category
 
   const handleDownloadPNG = () => {
@@ -97,7 +107,14 @@ export default function QRCodePage() {
 
           <div className="text-center">
             <p className="font-semibold text-gray-900 dark:text-white">{shop.name}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-all">{qrValue}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-all">
+              {qrValue || 'Backend chưa trả QR URL cho gian hàng này'}
+            </p>
+            {shop.approvalStatus && (
+              <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">
+                Trạng thái duyệt: {shop.approvalStatus}
+              </p>
+            )}
           </div>
 
           {/* Actions */}
@@ -163,7 +180,7 @@ export default function QRCodePage() {
                 <p className="text-xs text-gray-500 mt-0.5">Chào mừng bạn! Hệ thống sẽ tự động phát thuyết minh khi bạn đến gần các điểm thú vị.</p>
               </div>
               <div className="bg-indigo-600 text-white text-xs text-center rounded-lg py-1.5 font-medium">
-                🎧 Bắt đầu tour ngay
+                {qrValue ? '🎧 Bắt đầu tour ngay' : '⏳ Chờ backend cấp QR'}
               </div>
             </div>
           </div>

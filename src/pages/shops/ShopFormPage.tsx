@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { MapStep } from './MapStep'
 import { ContentStep } from './ContentStep'
 import type { POIContent } from '@/types'
+import { ownerApi } from '@/services/ownerApi'
 
 const step1Schema = z.object({
   name: z.string().min(2, 'Tên gian hàng tối thiểu 2 ký tự'),
@@ -45,13 +46,19 @@ const STEPS = [
 
 export default function ShopFormPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
-  const { shops, addShop, updateShop, addPOI } = useShopStore()
+  const { shops, fetchShops, updateShop } = useShopStore()
   const isEdit = Boolean(id)
   const existingShop = isEdit ? shops.find((s) => s.id === id) : undefined
+  const prefilledShopName =
+    !isEdit && location.state && typeof location.state === 'object' && 'initialShopName' in location.state
+      ? String(location.state.initialShopName ?? '')
+      : ''
 
   const [step, setStep] = useState(1)
   const [thumbnailPreview, setThumbnailPreview] = useState(existingShop?.thumbnail || '')
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [step2Data, setStep2Data] = useState<Step2Data>({
     lat: 10.7769,
     lng: 106.7009,
@@ -67,7 +74,7 @@ export default function ShopFormPage() {
   const form1 = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
     defaultValues: {
-      name: existingShop?.name || '',
+      name: existingShop?.name || prefilledShopName,
       description: existingShop?.description || '',
       category: existingShop?.category || '',
       thumbnail: existingShop?.thumbnail || '',
@@ -84,6 +91,7 @@ export default function ShopFormPage() {
     const file = e.target.files?.[0]
     if (file) {
       const url = URL.createObjectURL(file)
+      setThumbnailFile(file)
       setThumbnailPreview(url)
       form1.setValue('thumbnail', url)
     }
@@ -97,51 +105,80 @@ export default function ShopFormPage() {
 
   const handlePublish = async (isDraft: boolean) => {
     setIsSubmitting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    const s1 = form1.getValues()
-    const s2 = step2Data
+    try {
+      const s1 = form1.getValues()
+      const s2 = step2Data
 
-    const shopId = isEdit ? id! : `shop-${Date.now()}`
-    const poiId = `poi-${Date.now()}`
+      let thumbnailUrl = thumbnailPreview || s1.thumbnail || ''
+      if (thumbnailFile) {
+        const uploadedImage = await ownerApi.uploadImage(thumbnailFile)
+        thumbnailUrl = uploadedImage.url
+      }
 
-    if (isEdit) {
-      updateShop(shopId, { ...s1, thumbnail: thumbnailPreview || s1.thumbnail })
-      toast.success('Đã cập nhật gian hàng!')
-    } else {
-      addShop({
-        id: shopId,
-        ownerId: 'owner-1',
+      const basePayload = {
         name: s1.name,
         description: s1.description || '',
         category: s1.category,
-        thumbnail: thumbnailPreview || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=250&fit=crop',
+        thumbnailUrl,
         isActive: s1.isActive,
-        address: `${s2.lat.toFixed(4)}, ${s2.lng.toFixed(4)}`,
-        poiCount: 1,
-        createdAt: new Date().toISOString(),
-      })
-      addPOI({
-        id: poiId,
-        shopId,
-        name: s2.poiName,
-        lat: s2.lat,
-        lng: s2.lng,
-        radius: s2.radius,
-        priority: s2.priority as 1 | 2 | 3 | 4 | 5,
-        isActive: true,
-        contents: contents.map((c, i) => ({
-          ...c,
-          id: `content-${Date.now()}-${i}`,
-          poiId,
-          status: isDraft ? 'draft' : 'published',
-        })),
-        createdAt: new Date().toISOString(),
-      })
-      toast.success(isDraft ? 'Đã lưu nháp!' : 'Đã publish gian hàng!')
-    }
+        address: `${s2.lat.toFixed(5)}, ${s2.lng.toFixed(5)}`,
+        latitude: s2.lat,
+        longitude: s2.lng,
+      }
 
-    setIsSubmitting(false)
-    navigate('/shops')
+      if (isEdit) {
+        await updateShop(id!, {
+          ...s1,
+          thumbnail: thumbnailUrl,
+          address: basePayload.address,
+          latitude: s2.lat,
+          longitude: s2.lng,
+        })
+        toast.success('Đã cập nhật gian hàng!')
+      } else {
+        const createdShop = await ownerApi.createStall(basePayload)
+
+        const createdPoi = await ownerApi.createPoi(createdShop.id, {
+          name: s2.poiName,
+          latitude: s2.lat,
+          longitude: s2.lng,
+          radiusMeters: s2.radius,
+          priority: s2.priority,
+          active: true,
+        })
+
+        const contentPayload = []
+        for (const content of contents) {
+          let audioAssetId = content.audioAssetId
+          if (content.audioFile) {
+            const uploadedAudio = await ownerApi.uploadAudio(createdPoi.id, content.language, content.audioFile)
+            audioAssetId = uploadedAudio.id
+          }
+          contentPayload.push({
+            languageCode: content.language,
+            scriptText: content.script,
+            audioAssetId,
+          })
+        }
+
+        await ownerApi.savePoiContents(createdPoi.id, contentPayload)
+
+        if (!isDraft) {
+          await ownerApi.submitApproval(createdShop.id)
+        }
+
+        await fetchShops()
+
+        toast.success(isDraft ? 'Đã lưu nháp lên hệ thống!' : 'Đã gửi duyệt gian hàng!')
+      }
+
+      navigate('/shops')
+    } catch (error) {
+      console.error(error)
+      toast.error('Không thể lưu gian hàng. Vui lòng kiểm tra backend và thử lại.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const s1 = form1.watch()
@@ -394,7 +431,7 @@ export default function ShopFormPage() {
                 Lưu nháp
               </Button>
               <Button onClick={() => handlePublish(false)} loading={isSubmitting}>
-                Publish
+                Gửi duyệt
               </Button>
             </div>
           </div>
