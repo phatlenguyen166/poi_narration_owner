@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client'
-import type { Owner, SessionPayload } from '@/types'
+import type { Owner, OwnerNotificationSettings, OwnerPlan, OwnerSettings, SessionPayload } from '@/types'
 
 interface AuthRequest {
   email: string
@@ -17,6 +17,24 @@ interface OwnerProfileDto {
   email: string
   phoneNumber?: string
   role?: string
+  plan?: string | null
+}
+
+interface OwnerSettingsDto {
+  notifications: OwnerNotificationSettings
+  currentPlan: string
+  renewalAt?: string
+  availablePlans: Array<{
+    id: string
+    name: string
+    price: string
+    period: string
+    current: boolean
+    popular: boolean
+    ctaLabel: string
+    renewalAt?: string
+    features: string[]
+  }>
 }
 
 interface AuthTokensDto {
@@ -30,7 +48,35 @@ const mapOwner = (owner: OwnerProfileDto): Owner => ({
   name: owner.name,
   email: owner.email,
   phoneNumber: owner.phoneNumber,
-  plan: owner.role?.toUpperCase() === 'ADMIN' ? 'enterprise' : 'pro',
+  plan: normalizePlan(owner.plan),
+})
+
+const normalizePlan = (plan?: string | null): Owner['plan'] => {
+  switch ((plan ?? '').trim().toLowerCase()) {
+    case 'free':
+    case 'pro':
+    case 'enterprise':
+      return plan?.trim().toLowerCase() as Owner['plan']
+    default:
+      return 'pro'
+  }
+}
+
+const mapSettings = (settings: OwnerSettingsDto): OwnerSettings => ({
+  notifications: settings.notifications,
+  currentPlan: normalizePlan(settings.currentPlan) ?? 'pro',
+  renewalAt: settings.renewalAt,
+  availablePlans: settings.availablePlans.map((plan): OwnerPlan => ({
+    id: normalizePlan(plan.id) ?? 'pro',
+    name: plan.name,
+    price: plan.price,
+    period: plan.period,
+    current: plan.current,
+    popular: plan.popular,
+    ctaLabel: plan.ctaLabel,
+    renewalAt: plan.renewalAt,
+    features: plan.features,
+  })),
 })
 
 export const authApi = {
@@ -60,5 +106,35 @@ export const authApi = {
   async me() {
     const owner = await apiClient.request<OwnerProfileDto>('/api/v1/auth/me')
     return mapOwner(owner)
+  },
+  async updateProfile(payload: { name: string; email: string; phoneNumber?: string }) {
+    const owner = await apiClient.request<OwnerProfileDto>('/api/v1/owner/profile', {
+      method: 'PUT',
+      body: payload,
+    })
+    return mapOwner(owner)
+  },
+  changePassword(payload: { currentPassword: string; newPassword: string }) {
+    return apiClient.request<void>('/api/v1/owner/change-password', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+  async getSettings() {
+    const settings = await apiClient.request<OwnerSettingsDto>('/api/v1/owner/settings')
+    return mapSettings(settings)
+  },
+  updateNotificationSettings(payload: OwnerNotificationSettings) {
+    return apiClient.request<OwnerNotificationSettings>('/api/v1/owner/settings/notifications', {
+      method: 'PUT',
+      body: payload,
+    })
+  },
+  async changeSubscription(planId: OwnerPlan['id']) {
+    const settings = await apiClient.request<OwnerSettingsDto>('/api/v1/owner/settings/subscription', {
+      method: 'POST',
+      body: { planId },
+    })
+    return mapSettings(settings)
   },
 }

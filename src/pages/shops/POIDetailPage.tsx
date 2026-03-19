@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/Dialog'
 import { useShopStore } from '@/stores/shopStore'
-import { LANGUAGES } from '@/data/mock'
+import { useMetadataStore } from '@/stores/metadataStore'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -25,13 +25,15 @@ export default function POIDetailPage() {
   const { shopId, poiId } = useParams()
   const navigate = useNavigate()
   const { pois, fetchShops, updatePOI, deletePOI } = useShopStore()
+  const { fetchMetadata, getLanguage } = useMetadataStore()
   const [showDelete, setShowDelete] = useState(false)
   const [activeLang, setActiveLang] = useState('vi')
   const [speaking, setSpeaking] = useState(false)
 
   useEffect(() => {
     void fetchShops()
-  }, [fetchShops])
+    void fetchMetadata()
+  }, [fetchMetadata, fetchShops])
 
   const poi = pois.find((p) => p.id === poiId && p.shopId === shopId)
 
@@ -172,7 +174,7 @@ export default function POIDetailPage() {
             {/* Lang tabs */}
             <div className="flex flex-wrap gap-2">
               {poi.contents.map((c) => {
-                const lang = LANGUAGES.find((l) => l.code === c.language)
+                const lang = getLanguage(c.language)
                 return (
                   <button
                     key={c.language}
@@ -184,7 +186,7 @@ export default function POIDetailPage() {
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
                     )}
                   >
-                    {lang?.flag} {lang?.label}
+                    {lang?.flag} {lang?.name ?? c.language}
                     <Badge variant={c.status === 'published' ? 'success' : 'default'} className="ml-1 text-[10px] px-1 py-0">
                       {c.status}
                     </Badge>

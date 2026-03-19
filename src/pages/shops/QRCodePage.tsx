@@ -5,19 +5,21 @@ import { Download, Copy, Printer, MapPin, Store, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useShopStore } from '@/stores/shopStore'
-import { CATEGORIES } from '@/data/mock'
+import { useMetadataStore } from '@/stores/metadataStore'
 import toast from 'react-hot-toast'
 
 export default function QRCodePage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { shops, fetchShops, fetchQrCode, qrCodes } = useShopStore()
+  const { fetchMetadata, getCategoryLabel } = useMetadataStore()
   const shop = shops.find((s) => s.id === id)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     void fetchShops()
-  }, [fetchShops])
+    void fetchMetadata()
+  }, [fetchMetadata, fetchShops])
 
   useEffect(() => {
     if (id) {
@@ -35,7 +37,7 @@ export default function QRCodePage() {
   }
 
   const qrValue = qrCodes[shop.id]?.resolvedUrl || ''
-  const categoryLabel = CATEGORIES.find((c) => c.value === shop.category)?.label ?? shop.category
+  const categoryLabel = getCategoryLabel(shop.category)
 
   const handleDownloadPNG = () => {
     const canvas = document.querySelector('#qr-canvas canvas') as HTMLCanvasElement

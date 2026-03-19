@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Badge'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/stores/authStore'
+import { authApi } from '@/services/authApi'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import type { OwnerPlan, OwnerSettings } from '@/types'
 
 type TabId = 'account' | 'notifications' | 'plan'
 
@@ -22,6 +24,7 @@ const TABS = [
 const accountSchema = z.object({
   name: z.string().min(2, 'Tên tối thiểu 2 ký tự'),
   email: z.string().email('Email không hợp lệ'),
+  phoneNumber: z.string().optional(),
 })
 
 const passwordSchema = z.object({
@@ -36,36 +39,8 @@ const passwordSchema = z.object({
 type AccountForm = z.infer<typeof accountSchema>
 type PasswordForm = z.infer<typeof passwordSchema>
 
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: '0đ',
-    period: '/tháng',
-    features: ['1 gian hàng', '5 POI', '100 lượt nghe/tháng', 'QR Code cơ bản'],
-    color: 'gray',
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '199,000đ',
-    period: '/tháng',
-    features: ['10 gian hàng', 'Không giới hạn POI', '10,000 lượt nghe/tháng', 'QR Code custom', 'Thống kê nâng cao', 'Hỗ trợ ưu tiên'],
-    color: 'indigo',
-    popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Liên hệ',
-    period: '',
-    features: ['Không giới hạn gian hàng', 'Không giới hạn POI', 'Không giới hạn lượt nghe', 'API tích hợp', 'SLA 99.9%', 'Dedicated support'],
-    color: 'purple',
-  },
-]
-
 export default function SettingsPage() {
-  const { user, updateUser } = useAuthStore()
+  const { user, updateUser, refreshProfile } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabId>('account')
   const [notifSettings, setNotifSettings] = useState({
     emailPlays: true,
@@ -73,27 +48,93 @@ export default function SettingsPage() {
     pushNew: false,
     pushMilestone: true,
   })
+  const [settings, setSettings] = useState<OwnerSettings | null>(null)
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [savingNotifications, setSavingNotifications] = useState(false)
+  const [changingPlanId, setChangingPlanId] = useState<OwnerPlan['id'] | null>(null)
 
   const accountForm = useForm<AccountForm>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { name: user?.name || '', email: user?.email || '' },
+    defaultValues: { name: user?.name || '', email: user?.email || '', phoneNumber: user?.phoneNumber || '' },
   })
 
   const passwordForm = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   })
 
+  useEffect(() => {
+    accountForm.reset({
+      name: user?.name || '',
+      email: user?.email || '',
+      phoneNumber: user?.phoneNumber || '',
+    })
+  }, [accountForm, user])
+
+  useEffect(() => {
+    let mounted = true
+    const loadSettings = async () => {
+      setSettingsLoading(true)
+      try {
+        const nextSettings = await authApi.getSettings()
+        if (!mounted) return
+        setSettings(nextSettings)
+        setNotifSettings(nextSettings.notifications)
+      } catch (error) {
+        if (mounted) {
+          toast.error(error instanceof Error ? error.message : 'Không thể tải cài đặt')
+        }
+      } finally {
+        if (mounted) {
+          setSettingsLoading(false)
+        }
+      }
+    }
+    void loadSettings()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   const handleSaveAccount = accountForm.handleSubmit(async (data) => {
-    await new Promise((r) => setTimeout(r, 600))
-    updateUser(data)
+    const nextUser = await authApi.updateProfile(data)
+    updateUser(nextUser)
     toast.success('Đã cập nhật thông tin tài khoản')
   })
 
-  const handleChangePassword = passwordForm.handleSubmit(async () => {
-    await new Promise((r) => setTimeout(r, 600))
+  const handleChangePassword = passwordForm.handleSubmit(async ({ currentPassword, newPassword }) => {
+    await authApi.changePassword({ currentPassword, newPassword })
     passwordForm.reset()
     toast.success('Đã đổi mật khẩu thành công')
   })
+
+  const handleSaveNotifications = async () => {
+    setSavingNotifications(true)
+    try {
+      const notifications = await authApi.updateNotificationSettings(notifSettings)
+      setNotifSettings(notifications)
+      setSettings((current) => current ? { ...current, notifications } : current)
+      toast.success('Đã lưu cài đặt thông báo')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể lưu cài đặt thông báo')
+    } finally {
+      setSavingNotifications(false)
+    }
+  }
+
+  const handleChangePlan = async (planId: OwnerPlan['id']) => {
+    setChangingPlanId(planId)
+    try {
+      const nextSettings = await authApi.changeSubscription(planId)
+      setSettings(nextSettings)
+      setNotifSettings(nextSettings.notifications)
+      await refreshProfile()
+      toast.success(`Đã cập nhật gói ${planId.toUpperCase()}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật gói dịch vụ')
+    } finally {
+      setChangingPlanId(null)
+    }
+  }
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -162,6 +203,11 @@ export default function SettingsPage() {
                 error={accountForm.formState.errors.email?.message}
                 {...accountForm.register('email')}
               />
+              <Input
+                label="Số điện thoại"
+                error={accountForm.formState.errors.phoneNumber?.message}
+                {...accountForm.register('phoneNumber')}
+              />
               <div className="flex justify-end">
                 <Button type="submit" loading={accountForm.formState.isSubmitting}>
                   Lưu thay đổi
@@ -211,6 +257,7 @@ export default function SettingsPage() {
       {activeTab === 'notifications' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-6">
           <h2 className="font-semibold text-gray-900 dark:text-white">Cài đặt thông báo</h2>
+          {settingsLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Đang tải cài đặt...</p>}
 
           <div className="space-y-4">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2">
@@ -244,7 +291,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Button onClick={() => toast.success('Đã lưu cài đặt thông báo')}>
+          <Button onClick={() => void handleSaveNotifications()} loading={savingNotifications}>
             Lưu cài đặt
           </Button>
         </div>
@@ -255,17 +302,18 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4">
             <p className="text-sm text-indigo-800 dark:text-indigo-300">
-              <strong>Gói hiện tại:</strong> {user?.plan?.toUpperCase()} · Gia hạn tự động vào 07/04/2026
+              <strong>Gói hiện tại:</strong> {settings?.currentPlan?.toUpperCase() ?? user?.plan?.toUpperCase()}
+              {settings?.renewalAt ? ` · Gia hạn tự động vào ${new Date(settings.renewalAt).toLocaleDateString('vi-VN')}` : ''}
             </p>
           </div>
 
           <div className="grid gap-4">
-            {PLANS.map((plan) => (
+            {(settings?.availablePlans ?? []).map((plan) => (
               <div
                 key={plan.id}
                 className={cn(
                   'bg-white dark:bg-gray-800 rounded-xl border-2 p-5 transition-colors',
-                  plan.id === user?.plan
+                  plan.current
                     ? 'border-indigo-500 dark:border-indigo-400'
                     : 'border-gray-200 dark:border-gray-700',
                 )}
@@ -274,7 +322,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3">
                     <h3 className="font-bold text-gray-900 dark:text-white text-lg">{plan.name}</h3>
                     {plan.popular && <Badge variant="info">Phổ biến nhất</Badge>}
-                    {plan.id === user?.plan && <Badge variant="success">Gói hiện tại</Badge>}
+                    {plan.current && <Badge variant="success">Gói hiện tại</Badge>}
                   </div>
                   <div className="text-right">
                     <span className="text-xl font-bold text-gray-900 dark:text-white">{plan.price}</span>
@@ -288,17 +336,21 @@ export default function SettingsPage() {
                     </li>
                   ))}
                 </ul>
-                {plan.id !== user?.plan && (
+                {!plan.current && (
                   <Button
                     variant={plan.id === 'pro' ? 'primary' : 'outline'}
                     size="sm"
-                    onClick={() => toast.success(`Đang chuyển hướng đến trang thanh toán ${plan.name}...`)}
+                    loading={changingPlanId === plan.id}
+                    onClick={() => void handleChangePlan(plan.id)}
                   >
-                    {plan.price === 'Liên hệ' ? 'Liên hệ tư vấn' : 'Nâng cấp ngay'}
+                    {plan.ctaLabel}
                   </Button>
                 )}
               </div>
             ))}
+            {!settingsLoading && (settings?.availablePlans.length ?? 0) === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Không có cấu hình gói dịch vụ.</p>
+            )}
           </div>
         </div>
       )}

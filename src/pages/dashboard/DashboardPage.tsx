@@ -12,20 +12,20 @@ import { Badge } from '@/components/ui/Badge'
 import { Toggle } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useShopStore } from '@/stores/shopStore'
-import { CATEGORIES } from '@/data/mock'
+import { useMetadataStore } from '@/stores/metadataStore'
 import { formatNumber, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
-const categoryLabel = (c: string) => CATEGORIES.find((x) => x.value === c)?.label ?? c
-
 export default function DashboardPage() {
   const { shops, dashboard, notifications, fetchDashboard, fetchShops, toggleShopActive } = useShopStore()
+  const { fetchMetadata, getCategoryLabel } = useMetadataStore()
   const navigate = useNavigate()
 
   useEffect(() => {
     void fetchDashboard()
     void fetchShops()
-  }, [fetchDashboard, fetchShops])
+    void fetchMetadata()
+  }, [fetchDashboard, fetchMetadata, fetchShops])
 
   const last7 = dashboard.recentDailyPlays.slice(-7)
   const todayPlays = dashboard.todayPlays
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{shop.name}</p>
-                  <p className="text-xs text-gray-500">{shop.poiCount} POI · {categoryLabel(shop.category)}</p>
+                  <p className="text-xs text-gray-500">{shop.poiCount} POI · {getCategoryLabel(shop.category)}</p>
                 </div>
                 <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
               </div>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
               {shops.map((shop) => (
                 <tr key={shop.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="py-2.5 font-medium text-gray-900 dark:text-white">{shop.name}</td>
-                  <td className="py-2.5 text-gray-500 dark:text-gray-400">{categoryLabel(shop.category)}</td>
+                  <td className="py-2.5 text-gray-500 dark:text-gray-400">{getCategoryLabel(shop.category)}</td>
                   <td className="py-2.5 text-gray-700 dark:text-gray-300">{shop.poiCount}</td>
                   <td className="py-2.5">
                     <Badge variant={shop.isActive ? 'success' : 'default'}>

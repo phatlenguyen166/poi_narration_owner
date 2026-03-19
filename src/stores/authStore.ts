@@ -24,6 +24,7 @@ interface AuthState {
   bootstrap: () => Promise<void>
   logout: () => void
   updateUser: (data: Partial<Owner>) => void
+  refreshProfile: () => Promise<void>
 }
 
 const applySession = (set: (partial: Partial<AuthState>) => void, user: Owner, accessToken: string, refreshToken: string) => {
@@ -107,6 +108,17 @@ export const useAuthStore = create<AuthState>()(
       },
       updateUser: (data) =>
         set((state) => ({ user: state.user ? { ...state.user, ...data } : null })),
+      refreshProfile: async () => {
+        const user = await authApi.me()
+        set((state) => ({
+          user,
+          accessToken: state.accessToken,
+          refreshToken: state.refreshToken,
+          isAuthenticated: true,
+          isHydrated: true,
+          isBootstrapping: false,
+        }))
+      },
     }),
     {
       name: 'owner-auth-storage',

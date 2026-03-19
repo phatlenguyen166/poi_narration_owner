@@ -65,13 +65,16 @@ interface DashboardDto {
   stallCount?: number
   poiCount?: number
   pendingApprovals?: number
-  totalPlays?: number
+  todayPlays?: number
+  weekPlays?: number
+  monthPlays?: number
   notifications?: { id: string; type: 'info' | 'warning' | 'success'; message: string; createdAt: string; read: boolean }[]
   recentDailyPlays?: DailySeriesPoint[]
 }
 
 interface AnalyticsDto {
   totalPlays?: number
+  uniqueVisitors?: number
   uniqueLanguages?: number
   averageListenDurationSeconds?: number
   dailyPlays?: DailySeriesPoint[]
@@ -163,7 +166,7 @@ export interface SaveContentPayload {
   languageCode: string
   scriptText: string
   audioAssetId?: string
-  contentStatus?: string
+  contentStatus?: 'READY' | 'DRAFT'
 }
 
 export const ownerApi = {
@@ -172,12 +175,12 @@ export const ownerApi = {
     return {
       summary: {
         stallCount: response.stallCount ?? 0,
-        todayPlays: response.totalPlays ?? 0,
-        weekPlays: response.totalPlays ?? 0,
-        monthPlays: response.totalPlays ?? 0,
+        todayPlays: response.todayPlays ?? 0,
+        weekPlays: response.weekPlays ?? 0,
+        monthPlays: response.monthPlays ?? 0,
         activePoiCount: response.poiCount ?? 0,
         pendingApprovals: response.pendingApprovals ?? 0,
-        totalPlays: response.totalPlays ?? 0,
+        totalPlays: response.monthPlays ?? 0,
       },
       notifications: response.notifications ?? buildNotifications(response),
       recentDailyPlays: response.recentDailyPlays ?? [],
@@ -200,6 +203,13 @@ export const ownerApi = {
       },
     })
     return mapShop(response)
+  },
+  async getStall(stallId: string) {
+    const response = await apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`)
+    return {
+      shop: mapShop(response),
+      pois: (response.pois ?? []).map((poi) => ({ ...mapPoi(poi), shopId: String(response.id) })),
+    }
   },
   async updateStall(stallId: string, payload: Partial<CreateStallPayload>) {
     const response = await apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`, {
@@ -235,7 +245,12 @@ export const ownerApi = {
   async savePoiContents(poiId: string, payload: SaveContentPayload[]) {
     const response = await apiClient.request<PoiDto>(`/api/v1/owner/pois/${poiId}/contents`, {
       method: 'PUT',
-      body: { contents: payload.map((item) => ({ ...item, contentStatus: item.audioAssetId ? 'READY' : 'DRAFT' })) },
+      body: {
+        contents: payload.map((item) => ({
+          ...item,
+          contentStatus: item.contentStatus ?? (item.audioAssetId || item.scriptText ? 'READY' : 'DRAFT'),
+        })),
+      },
     })
     return mapPoi(response)
   },
@@ -280,7 +295,7 @@ export const ownerApi = {
       summary: {
         totalPlays: response.totalPlays ?? 0,
         averageDurationSeconds: response.averageListenDurationSeconds ?? 0,
-        uniqueVisitors: response.uniqueLanguages ?? 0,
+        uniqueVisitors: response.uniqueVisitors ?? 0,
         uniqueLanguages: response.uniqueLanguages ?? 0,
       },
       dailyPlays: response.dailyPlays ?? [],

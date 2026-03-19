@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Plus, Trash2, Upload, Square, Mic } from 'lucide-react'
 import { Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { LANGUAGES } from '@/data/mock'
+import { useMetadataStore } from '@/stores/metadataStore'
 import { cn } from '@/lib/utils'
 import type { POIContent } from '@/types'
 
@@ -13,9 +13,14 @@ interface ContentStepProps {
 }
 
 export function ContentStep({ contents, onChange }: ContentStepProps) {
+  const { languages, fetchMetadata, getLanguage } = useMetadataStore()
   const [activeLang, setActiveLang] = useState(contents[0]?.language || 'vi')
   const [speaking, setSpeaking] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    void fetchMetadata()
+  }, [fetchMetadata])
 
   const activeContent = contents.find((c) => c.language === activeLang)
 
@@ -62,14 +67,14 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
     window.speechSynthesis.speak(utterance)
   }
 
-  const unusedLanguages = LANGUAGES.filter((l) => !contents.find((c) => c.language === l.code))
+  const unusedLanguages = languages.filter((language) => !contents.find((c) => c.language === language.code))
 
   return (
     <div className="space-y-4">
       {/* Language tabs */}
       <div className="flex items-center gap-2 flex-wrap">
         {contents.map((c) => {
-          const lang = LANGUAGES.find((l) => l.code === c.language)
+          const lang = getLanguage(c.language)
           return (
             <div key={c.language} className="flex items-center">
               <button
@@ -82,7 +87,7 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
                 )}
               >
                 <span>{lang?.flag}</span>
-                <span>{lang?.label}</span>
+                <span>{lang?.name ?? c.language}</span>
                 {c.script && <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />}
               </button>
               {contents.length > 1 && (
@@ -111,7 +116,7 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
                   <span>{l.flag}</span>
-                  <span>{l.label}</span>
+                  <span>{l.name}</span>
                 </button>
               ))}
             </div>
@@ -124,9 +129,9 @@ export function ContentStep({ contents, onChange }: ContentStepProps) {
         <div className="space-y-4 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-lg">{LANGUAGES.find((l) => l.code === activeLang)?.flag}</span>
+              <span className="text-lg">{getLanguage(activeLang)?.flag}</span>
               <span className="font-medium text-gray-900 dark:text-white">
-                {LANGUAGES.find((l) => l.code === activeLang)?.label}
+                {getLanguage(activeLang)?.name ?? activeLang}
               </span>
             </div>
             <div className="flex items-center gap-2">

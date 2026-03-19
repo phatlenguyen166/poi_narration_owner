@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Select } from '@/components/ui/Input'
 import { Toggle } from '@/components/ui/Badge'
 import { useShopStore } from '@/stores/shopStore'
-import { CATEGORIES, LANGUAGES } from '@/data/mock'
+import { useMetadataStore } from '@/stores/metadataStore'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { MapStep } from './MapStep'
@@ -49,6 +49,7 @@ export default function ShopFormPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { shops, fetchShops, updateShop } = useShopStore()
+  const { categories, fetchMetadata, getCategoryLabel, getLanguage } = useMetadataStore()
   const isEdit = Boolean(id)
   const existingShop = isEdit ? shops.find((s) => s.id === id) : undefined
   const prefilledShopName =
@@ -69,7 +70,12 @@ export default function ShopFormPage() {
   const [contents, setContents] = useState<POIContent[]>([
     { id: 'new-vi', poiId: 'new', language: 'vi', script: '', audioUrl: undefined, status: 'draft' },
   ])
+  const [loadingExisting, setLoadingExisting] = useState(isEdit)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    void fetchMetadata()
+  }, [fetchMetadata])
 
   const form1 = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -86,6 +92,56 @@ export default function ShopFormPage() {
     resolver: zodResolver(step2Schema),
     defaultValues: step2Data,
   })
+
+  useEffect(() => {
+    if (!isEdit || !id) {
+      setLoadingExisting(false)
+      return
+    }
+
+    let mounted = true
+    const hydrate = async () => {
+      setLoadingExisting(true)
+      try {
+        const { shop, pois } = await ownerApi.getStall(id)
+        if (!mounted) return
+        const primaryPoi = pois[0]
+        form1.reset({
+          name: shop.name,
+          description: shop.description,
+          category: shop.category,
+          thumbnail: shop.thumbnail,
+          isActive: shop.isActive,
+        })
+        setThumbnailPreview(shop.thumbnail)
+        const nextStep2Data = {
+          lat: primaryPoi?.lat ?? shop.latitude ?? 10.7769,
+          lng: primaryPoi?.lng ?? shop.longitude ?? 106.7009,
+          radius: primaryPoi?.radius ?? 50,
+          priority: primaryPoi?.priority ?? 1,
+          poiName: primaryPoi?.name ?? '',
+        }
+        setStep2Data(nextStep2Data)
+        form2.reset(nextStep2Data)
+        setContents(
+          primaryPoi?.contents?.length
+            ? primaryPoi.contents
+            : [{ id: 'new-vi', poiId: primaryPoi?.id ?? 'new', language: 'vi', script: '', audioUrl: undefined, status: 'draft' }],
+        )
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Không thể tải dữ liệu gian hàng')
+      } finally {
+        if (mounted) {
+          setLoadingExisting(false)
+        }
+      }
+    }
+
+    void hydrate()
+    return () => {
+      mounted = false
+    }
+  }, [form1, form2, id, isEdit])
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -127,6 +183,7 @@ export default function ShopFormPage() {
       }
 
       if (isEdit) {
+        const existing = await ownerApi.getStall(id!)
         await updateShop(id!, {
           ...s1,
           thumbnail: thumbnailUrl,
@@ -134,6 +191,44 @@ export default function ShopFormPage() {
           latitude: s2.lat,
           longitude: s2.lng,
         })
+        const currentPoi = existing.pois[0] ?? await ownerApi.createPoi(id!, {
+          name: s2.poiName,
+          latitude: s2.lat,
+          longitude: s2.lng,
+          radiusMeters: s2.radius,
+          priority: s2.priority,
+          active: true,
+        })
+        if (existing.pois[0]) {
+          await ownerApi.updatePoi(currentPoi.id, {
+            name: s2.poiName,
+            latitude: s2.lat,
+            longitude: s2.lng,
+            radiusMeters: s2.radius,
+            priority: s2.priority,
+            active: s1.isActive,
+          })
+        }
+
+        const contentPayload: Array<{ languageCode: string; scriptText: string; audioAssetId?: string; contentStatus: 'READY' | 'DRAFT' }> = []
+        for (const content of contents) {
+          let audioAssetId = content.audioAssetId
+          if (content.audioFile) {
+            const uploadedAudio = await ownerApi.uploadAudio(currentPoi.id, content.language, content.audioFile)
+            audioAssetId = uploadedAudio.id
+          }
+          contentPayload.push({
+            languageCode: content.language,
+            scriptText: content.script,
+            audioAssetId,
+            contentStatus: content.status === 'published' ? 'READY' : 'DRAFT',
+          })
+        }
+        await ownerApi.savePoiContents(currentPoi.id, contentPayload)
+        if (!isDraft) {
+          await ownerApi.submitApproval(id!)
+        }
+        await fetchShops()
         toast.success('Đã cập nhật gian hàng!')
       } else {
         const createdShop = await ownerApi.createStall(basePayload)
@@ -147,7 +242,7 @@ export default function ShopFormPage() {
           active: true,
         })
 
-        const contentPayload = []
+        const contentPayload: Array<{ languageCode: string; scriptText: string; audioAssetId?: string; contentStatus: 'READY' | 'DRAFT' }> = []
         for (const content of contents) {
           let audioAssetId = content.audioAssetId
           if (content.audioFile) {
@@ -158,6 +253,7 @@ export default function ShopFormPage() {
             languageCode: content.language,
             scriptText: content.script,
             audioAssetId,
+            contentStatus: content.status === 'published' ? 'READY' : 'DRAFT',
           })
         }
 
@@ -182,6 +278,16 @@ export default function ShopFormPage() {
   }
 
   const s1 = form1.watch()
+
+  if (loadingExisting) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+          Đang tải dữ liệu gian hàng...
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -256,7 +362,7 @@ export default function ShopFormPage() {
             render={({ field }) => (
               <Select
                 label="Danh mục"
-                options={CATEGORIES}
+                options={categories.map((category) => ({ value: category.value, label: category.label }))}
                 required
                 error={form1.formState.errors.category?.message}
                 {...field}
@@ -368,7 +474,7 @@ export default function ShopFormPage() {
                   <p className="font-semibold text-gray-900 dark:text-white text-lg">{s1.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{s1.description}</p>
                   <p className="text-sm text-indigo-600 mt-1">
-                    {CATEGORIES.find((c) => c.value === s1.category)?.label}
+                    {getCategoryLabel(s1.category)}
                   </p>
                 </div>
               </div>
@@ -404,11 +510,11 @@ export default function ShopFormPage() {
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Nội dung thuyết minh</h3>
               <div className="flex flex-wrap gap-2">
                 {contents.map((c) => {
-                  const lang = LANGUAGES.find((l) => l.code === c.language)
+                  const lang = getLanguage(c.language)
                   return (
                     <div key={c.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
                       <span>{lang?.flag}</span>
-                      <span className="text-gray-700 dark:text-gray-300">{lang?.label}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{lang?.name ?? c.language}</span>
                       <span className={cn(
                         'text-xs px-1.5 py-0.5 rounded',
                         c.script ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
