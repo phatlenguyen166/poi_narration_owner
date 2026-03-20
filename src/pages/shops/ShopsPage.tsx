@@ -7,13 +7,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Toggle } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/Dialog'
 import { useShopStore } from '@/stores/shopStore'
-import { useMetadataStore } from '@/stores/metadataStore'
 import toast from 'react-hot-toast'
 import type { Shop } from '@/types'
 
-function ShopCard({ shop, categoryLabel, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
+function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
   shop: Shop
-  categoryLabel: string
   onEdit: () => void
   onDelete: () => void
   onToggle: () => void
@@ -34,7 +32,7 @@ function ShopCard({ shop, categoryLabel, onEdit, onDelete, onToggle, onAnalytics
           </Badge>
         </div>
         <div className="absolute top-3 left-3">
-          <Badge variant="info">{categoryLabel}</Badge>
+          <Badge variant="info">Địa điểm</Badge>
         </div>
       </div>
 
@@ -46,14 +44,9 @@ function ShopCard({ shop, categoryLabel, onEdit, onDelete, onToggle, onAnalytics
           <MapPin size={12} />
           <span className="truncate">{shop.address}</span>
         </div>
-
-        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          {categoryLabel}
-        </div>
-
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-semibold text-gray-700 dark:text-gray-200">{shop.poiCount}</span> POI
+            <span className="font-semibold text-gray-700 dark:text-gray-200">{shop.audioGuideCount}</span> audio guide
           </span>
           <Toggle checked={shop.isActive} onChange={onToggle} />
         </div>
@@ -79,15 +72,13 @@ function ShopCard({ shop, categoryLabel, onEdit, onDelete, onToggle, onAnalytics
 
 export default function ShopsPage() {
   const { shops, fetchShops, deleteShop, toggleShopActive, isLoading } = useShopStore()
-  const { fetchMetadata, getCategoryLabel } = useMetadataStore()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   useEffect(() => {
     void fetchShops()
-    void fetchMetadata()
-  }, [fetchMetadata, fetchShops])
+  }, [fetchShops])
 
   const filtered = shops.filter(
     (s) =>
@@ -148,7 +139,6 @@ export default function ShopsPage() {
             <ShopCard
               key={shop.id}
               shop={shop}
-              categoryLabel={getCategoryLabel(shop.category)}
               onEdit={() => navigate(`/shops/${shop.id}/edit`)}
               onDelete={() => setDeleteTarget(shop.id)}
               onToggle={() => void toggleShopActive(shop.id)

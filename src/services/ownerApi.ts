@@ -1,8 +1,7 @@
 import { apiClient } from '@/lib/api-client'
 import type {
   DailySeriesPoint,
-  POI,
-  POIContent,
+  NarrationGuide,
   QrCodePayload,
   Shop,
   UploadedAsset,
@@ -10,65 +9,38 @@ import type {
 
 interface StallDto {
   id: number | string
-  ownerId?: number | string
   name: string
   description?: string
-  category?: string
-  thumbnailUrl?: string
-  thumbnail?: string
-  active?: boolean
-  isActive?: boolean
   address?: string
   latitude?: number
   longitude?: number
-  poiCount?: number
-  createdAt?: string
-  approvalStatus?: string
-  status?: string
-  pois?: PoiDto[]
-}
-
-interface PoiDto {
-  id: number | string
-  stallId?: number | string
-  shopId?: number | string
-  name: string
-  latitude?: number
-  longitude?: number
-  lat?: number
-  lng?: number
-  radiusMeters?: number
-  radius?: number
-  priority?: number
   active?: boolean
-  isActive?: boolean
   approvalStatus?: string
-  status?: string
   createdAt?: string
-  contents?: PoiContentDto[]
+  audioGuideCount?: number
 }
 
-interface PoiContentDto {
+interface StallAudioGuideDto {
   id: number | string
-  languageCode?: string
-  language?: string
-  scriptText?: string
-  script?: string
-  audioAssetUrl?: string
+  stallId: number | string
+  languageCode: string
+  languageName: string
+  title: string
+  scriptText: string
   audioUrl?: string
-  audioAssetId?: number | string
-  status?: string
-  contentStatus?: string
+  audioDurationSeconds?: number
+  active: boolean
+  approvalStatus?: string
+  createdAt?: string
 }
 
 interface DashboardDto {
   stallCount?: number
-  poiCount?: number
+  audioGuideCount?: number
   pendingApprovals?: number
   todayPlays?: number
   weekPlays?: number
   monthPlays?: number
-  notifications?: { id: string; type: 'info' | 'warning' | 'success'; message: string; createdAt: string; read: boolean }[]
   recentDailyPlays?: DailySeriesPoint[]
 }
 
@@ -79,94 +51,68 @@ interface AnalyticsDto {
   averageListenDurationSeconds?: number
   dailyPlays?: DailySeriesPoint[]
   languageBreakdown?: { languageCode?: string; languageName?: string; count: number }[]
-  recentLogs?: { poiId?: string; poiName?: string; languageCode?: string; languageName?: string; listenDurationSeconds?: number; playedAt: string }[]
+  recentLogs?: { languageCode?: string; languageName?: string; listenDurationSeconds?: number; createdAt?: string }[]
 }
 
-const normalizeStatus = (value?: string) => value?.toLowerCase() === 'approved' ? 'published' : 'draft'
+const DEFAULT_STALL_IMAGE =
+  'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=1200&h=800&fit=crop'
 
-const mapContent = (dto: PoiContentDto): POIContent => ({
+const mapShop = (dto: StallDto): Shop => ({
   id: String(dto.id),
-  poiId: '',
-  language: dto.languageCode ?? dto.language ?? 'vi',
-  script: dto.scriptText ?? dto.script ?? '',
-  audioUrl: dto.audioAssetUrl ?? dto.audioUrl,
-  audioAssetId: dto.audioAssetId ? String(dto.audioAssetId) : undefined,
-  status: normalizeStatus(dto.contentStatus ?? dto.status),
-})
-
-const mapPoi = (dto: PoiDto): POI => ({
-  id: String(dto.id),
-  shopId: String(dto.stallId ?? dto.shopId ?? ''),
+  ownerId: '',
   name: dto.name,
-  lat: dto.latitude ?? dto.lat ?? 0,
-  lng: dto.longitude ?? dto.lng ?? 0,
-  radius: dto.radiusMeters ?? dto.radius ?? 50,
-  priority: ((dto.priority ?? 1) as 1 | 2 | 3 | 4 | 5),
-  isActive: dto.active ?? dto.isActive ?? true,
-  approvalStatus: dto.approvalStatus ?? dto.status,
-  contents: (dto.contents ?? []).map((content) => ({ ...mapContent(content), poiId: String(dto.id) })),
+  description: dto.description ?? '',
+  category: 'stall',
+  thumbnail: DEFAULT_STALL_IMAGE,
+  isActive: dto.active ?? true,
+  approvalStatus: dto.approvalStatus,
+  qrResolvedUrl: undefined,
+  address: dto.address ?? '',
+  latitude: dto.latitude,
+  longitude: dto.longitude,
+  poiCount: dto.audioGuideCount ?? 0,
+  audioGuideCount: dto.audioGuideCount ?? 0,
   createdAt: dto.createdAt ?? new Date().toISOString(),
 })
 
-const mapShop = (dto: StallDto): Shop => {
-  const pois = (dto.pois ?? []).map(mapPoi)
-  return {
-    id: String(dto.id),
-    ownerId: String(dto.ownerId ?? ''),
-    name: dto.name,
-    description: dto.description ?? '',
-    category: dto.category ?? 'other',
-    thumbnail: dto.thumbnailUrl ?? dto.thumbnail ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=250&fit=crop',
-    isActive: dto.active ?? dto.isActive ?? true,
-    approvalStatus: dto.approvalStatus ?? dto.status,
-    address: dto.address ?? '',
-    latitude: dto.latitude,
-    longitude: dto.longitude,
-    poiCount: dto.poiCount ?? pois.length,
-    createdAt: dto.createdAt ?? new Date().toISOString(),
-    qrResolvedUrl: undefined,
-  }
-}
-
-const buildNotifications = (dashboard: DashboardDto): DashboardDto['notifications'] => {
-  const notifications: NonNullable<DashboardDto['notifications']> = []
-  if ((dashboard.pendingApprovals ?? 0) > 0) {
-    notifications.push({
-      id: 'pending-approvals',
-      type: 'warning',
-      message: `Ban co ${dashboard.pendingApprovals} muc dang cho duyet`,
-      createdAt: new Date().toISOString(),
-      read: false,
-    })
-  }
-  return notifications
-}
+const mapGuide = (dto: StallAudioGuideDto): NarrationGuide => ({
+  id: String(dto.id),
+  stallId: String(dto.stallId),
+  languageCode: dto.languageCode,
+  languageName: dto.languageName,
+  title: dto.title,
+  scriptText: dto.scriptText,
+  audioUrl: dto.audioUrl,
+  audioDurationSeconds: dto.audioDurationSeconds,
+  active: dto.active,
+  approvalStatus: dto.approvalStatus,
+  createdAt: dto.createdAt ?? new Date().toISOString(),
+})
 
 export interface CreateStallPayload {
   name: string
   description: string
-  category: string
-  thumbnailUrl?: string
-  isActive: boolean
   address: string
   latitude: number
   longitude: number
+  isActive: boolean
 }
 
-export interface CreatePoiPayload {
-  name: string
-  latitude: number
-  longitude: number
-  radiusMeters: number
-  priority: number
-  active: boolean
+export interface GenerateNarrationPayload {
+  title?: string
+  sourceText: string
+  sourceLanguageCode?: string
+  targetLanguageCodes?: string[]
+  active?: boolean
+  approvalStatus?: string
 }
 
-export interface SaveContentPayload {
+export interface SaveDraftNarrationPayload {
   languageCode: string
+  title: string
   scriptText: string
-  audioAssetId?: string
-  contentStatus?: 'READY' | 'DRAFT'
+  active?: boolean
+  approvalStatus?: string
 }
 
 export const ownerApi = {
@@ -178,82 +124,120 @@ export const ownerApi = {
         todayPlays: response.todayPlays ?? 0,
         weekPlays: response.weekPlays ?? 0,
         monthPlays: response.monthPlays ?? 0,
-        activePoiCount: response.poiCount ?? 0,
+        activePoiCount: response.audioGuideCount ?? 0,
         pendingApprovals: response.pendingApprovals ?? 0,
         totalPlays: response.monthPlays ?? 0,
       },
-      notifications: response.notifications ?? buildNotifications(response),
+      notifications:
+        (response.pendingApprovals ?? 0) > 0
+          ? [
+              {
+                id: 'pending-approvals',
+                type: 'warning' as const,
+                message: `Bạn có ${response.pendingApprovals} địa điểm đang chờ duyệt`,
+                createdAt: new Date().toISOString(),
+                read: false,
+              },
+            ]
+          : [],
       recentDailyPlays: response.recentDailyPlays ?? [],
     }
   },
+
   async getStalls() {
     const response = await apiClient.request<StallDto[]>('/api/v1/owner/stalls')
     const shops = response.map(mapShop)
-    const pois = response.flatMap((stall) =>
-      (stall.pois ?? []).map((poi) => ({ ...mapPoi(poi), shopId: String(stall.id) })),
-    )
-    return { shops, pois }
+    return { shops, guidesByStall: {} as Record<string, NarrationGuide[]> }
   },
+
+  async getStall(stallId: string) {
+    const [stall, guides] = await Promise.all([
+      apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`),
+      apiClient.request<StallAudioGuideDto[]>(`/api/v1/owner/stalls/${stallId}/audio-guides`),
+    ])
+
+    return {
+      shop: mapShop(stall),
+      guides: guides.map(mapGuide),
+    }
+  },
+
   async createStall(payload: CreateStallPayload) {
     const response = await apiClient.request<StallDto>('/api/v1/owner/stalls', {
       method: 'POST',
       body: {
-        ...payload,
+        name: payload.name,
+        description: payload.description,
+        address: payload.address,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
         active: payload.isActive,
       },
     })
     return mapShop(response)
   },
-  async getStall(stallId: string) {
-    const response = await apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`)
-    return {
-      shop: mapShop(response),
-      pois: (response.pois ?? []).map((poi) => ({ ...mapPoi(poi), shopId: String(response.id) })),
-    }
-  },
+
   async updateStall(stallId: string, payload: Partial<CreateStallPayload>) {
+    const current = await apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`)
     const response = await apiClient.request<StallDto>(`/api/v1/owner/stalls/${stallId}`, {
       method: 'PUT',
-      body: payload,
+      body: {
+        name: payload.name ?? current.name,
+        description: payload.description ?? current.description ?? '',
+        address: payload.address ?? current.address ?? '',
+        latitude: payload.latitude ?? current.latitude ?? 0,
+        longitude: payload.longitude ?? current.longitude ?? 0,
+        active: payload.isActive ?? current.active ?? true,
+      },
     })
     return mapShop(response)
   },
+
   async deleteStall(stallId: string) {
     await apiClient.request<void>(`/api/v1/owner/stalls/${stallId}`, {
       method: 'DELETE',
     })
   },
-  async createPoi(stallId: string, payload: CreatePoiPayload) {
-    const response = await apiClient.request<PoiDto>(`/api/v1/owner/stalls/${stallId}/pois`, {
+
+  async generateNarration(stallId: string, payload: GenerateNarrationPayload) {
+    const response = await apiClient.request<{
+      guides: StallAudioGuideDto[]
+    }>(`/api/v1/owner/stalls/${stallId}/audio-guides/generate`, {
       method: 'POST',
-      body: payload,
-    })
-    return { ...mapPoi(response), shopId: stallId }
-  },
-  async updatePoi(poiId: string, payload: Partial<CreatePoiPayload>) {
-    const response = await apiClient.request<PoiDto>(`/api/v1/owner/pois/${poiId}`, {
-      method: 'PUT',
-      body: payload,
-    })
-    return mapPoi(response)
-  },
-  async deletePoi(poiId: string) {
-    await apiClient.request<void>(`/api/v1/owner/pois/${poiId}`, {
-      method: 'DELETE',
-    })
-  },
-  async savePoiContents(poiId: string, payload: SaveContentPayload[]) {
-    const response = await apiClient.request<PoiDto>(`/api/v1/owner/pois/${poiId}/contents`, {
-      method: 'PUT',
       body: {
-        contents: payload.map((item) => ({
-          ...item,
-          contentStatus: item.contentStatus ?? (item.audioAssetId || item.scriptText ? 'READY' : 'DRAFT'),
-        })),
+        title: payload.title,
+        sourceText: payload.sourceText,
+        sourceLanguageCode: payload.sourceLanguageCode ?? 'vi',
+        targetLanguageCodes: payload.targetLanguageCodes,
+        active: payload.active ?? true,
+        approvalStatus: payload.approvalStatus ?? 'PENDING',
       },
     })
-    return mapPoi(response)
+
+    return response.guides.map(mapGuide)
   },
+
+  async saveDraftNarration(stallId: string, payload: SaveDraftNarrationPayload) {
+    const response = await apiClient.request<StallAudioGuideDto>(`/api/v1/owner/stalls/${stallId}/audio-guides`, {
+      method: 'POST',
+      body: {
+        languageCode: payload.languageCode,
+        title: payload.title,
+        scriptText: payload.scriptText,
+        audioUrl: null,
+        audioDurationSeconds: null,
+        active: payload.active ?? true,
+        approvalStatus: payload.approvalStatus ?? 'PENDING',
+      },
+    })
+    return mapGuide(response)
+  },
+
+  async listAudioGuides(stallId: string) {
+    const response = await apiClient.request<StallAudioGuideDto[]>(`/api/v1/owner/stalls/${stallId}/audio-guides`)
+    return response.map(mapGuide)
+  },
+
   async uploadImage(file: File): Promise<UploadedAsset> {
     const body = new FormData()
     body.append('file', file)
@@ -267,28 +251,17 @@ export const ownerApi = {
       fileName: response.fileName,
     }
   },
-  async uploadAudio(poiId: string, languageCode: string, file: File): Promise<UploadedAsset> {
-    const body = new FormData()
-    body.append('file', file)
-    body.append('languageCode', languageCode)
-    const response = await apiClient.request<{ assetId?: string; fileName?: string; url: string }>(`/api/v1/uploads/audio/pois/${poiId}`, {
-      method: 'POST',
-      body,
-    })
-    return {
-      id: String(response.assetId ?? ''),
-      url: response.url,
-      fileName: response.fileName,
-    }
-  },
+
   submitApproval(stallId: string) {
     return apiClient.request<void>(`/api/v1/owner/stalls/${stallId}/submit-approval`, {
       method: 'POST',
     })
   },
+
   getQrCode(stallId: string) {
     return apiClient.request<QrCodePayload>(`/api/v1/owner/stalls/${stallId}/qr`)
   },
+
   async getAnalytics(stallId: string) {
     const response = await apiClient.request<AnalyticsDto>(`/api/v1/owner/stalls/${stallId}/analytics`)
     return {
@@ -304,12 +277,12 @@ export const ownerApi = {
         count: item.count,
       })),
       recentLogs: (response.recentLogs ?? []).map((item, index) => ({
-        id: `${item.poiId ?? 'poi'}-${item.playedAt}-${index}`,
-        poiId: String(item.poiId ?? ''),
-        poiName: item.poiName,
+        id: `${stallId}-${item.createdAt ?? index}-${index}`,
+        poiId: stallId,
+        poiName: undefined,
         language: item.languageCode ?? item.languageName ?? 'vi',
         duration: item.listenDurationSeconds ?? 0,
-        playedAt: item.playedAt,
+        playedAt: item.createdAt ?? new Date().toISOString(),
       })),
     }
   },

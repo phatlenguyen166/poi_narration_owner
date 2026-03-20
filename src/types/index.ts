@@ -3,7 +3,7 @@ export interface Shop {
   ownerId: string
   name: string
   description: string
-  category: string
+  category?: string
   thumbnail: string
   isActive: boolean
   approvalStatus?: string
@@ -12,6 +12,7 @@ export interface Shop {
   latitude?: number
   longitude?: number
   poiCount: number
+  audioGuideCount: number
   createdAt: string
 }
 
@@ -106,6 +107,20 @@ export interface SessionPayload {
   user: Owner
   accessToken: string
   refreshToken: string
+}
+
+export interface NarrationGuide {
+  id: string
+  stallId: string
+  languageCode: string
+  languageName: string
+  title: string
+  scriptText: string
+  audioUrl?: string
+  audioDurationSeconds?: number
+  active: boolean
+  approvalStatus?: string
+  createdAt: string
 }
 
 export interface UploadedAsset {

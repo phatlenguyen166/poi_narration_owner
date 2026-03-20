@@ -47,7 +47,7 @@ export default function GlobalAnalyticsPage() {
               <img src={shop.thumbnail} alt={shop.name} className="w-10 h-10 rounded-lg object-cover" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 dark:text-white">{shop.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{shop.poiCount} POI</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{shop.audioGuideCount} audio guide</p>
               </div>
               <Button
                 variant="ghost"

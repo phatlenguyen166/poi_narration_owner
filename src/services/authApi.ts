@@ -8,6 +8,7 @@ interface AuthRequest {
 
 interface OwnerRegisterRequest extends AuthRequest {
   name: string
+  businessName?: string
   phoneNumber?: string
 }
 

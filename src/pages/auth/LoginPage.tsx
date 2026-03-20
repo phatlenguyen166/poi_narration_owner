@@ -21,6 +21,10 @@ export default function LoginPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      email: 'owner@poi.local',
+      password: 'Owner@123',
+    },
   })
 
   const onSubmit = async (data: FormData) => {
@@ -73,6 +77,10 @@ export default function LoginPage() {
           <p className="text-gray-500 dark:text-gray-400 mb-8">
             Chào mừng trở lại! Vui lòng đăng nhập tài khoản.
           </p>
+
+          <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+            Tài khoản test mặc định đã điền sẵn: <span className="font-semibold">owner@poi.local</span> / <span className="font-semibold">Owner@123</span>
+          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input

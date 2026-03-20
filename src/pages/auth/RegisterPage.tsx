@@ -33,6 +33,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     await registerOwner({
       name: data.name,
+      businessName: data.shopName,
       email: data.email,
       password: data.password,
     })

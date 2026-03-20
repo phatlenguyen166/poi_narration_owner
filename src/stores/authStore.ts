@@ -7,6 +7,7 @@ import type { Owner } from '@/types'
 
 interface RegisterPayload {
   name: string
+  businessName?: string
   email: string
   password: string
   phoneNumber?: string
@@ -52,8 +53,8 @@ export const useAuthStore = create<AuthState>()(
         const session = await authApi.login({ email, password })
         applySession(set, session.user, session.accessToken, session.refreshToken)
       },
-      register: async ({ name, email, password, phoneNumber }) => {
-        const session = await authApi.register({ name, email, password, phoneNumber })
+      register: async ({ name, businessName, email, password, phoneNumber }) => {
+        const session = await authApi.register({ name, businessName, email, password, phoneNumber })
         applySession(set, session.user, session.accessToken, session.refreshToken)
       },
       bootstrap: async () => {

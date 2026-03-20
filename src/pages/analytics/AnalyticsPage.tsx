@@ -15,12 +15,10 @@ type Range = '7d' | '30d' | 'custom'
 export default function AnalyticsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { shops, pois, analyticsByShop, fetchAnalytics, fetchShops } = useShopStore()
+  const { shops, analyticsByShop, fetchAnalytics, fetchShops } = useShopStore()
   const shop = shops.find((s) => s.id === id)
   const [range, setRange] = useState<Range>('7d')
   const analytics = id ? analyticsByShop[id] : undefined
-
-  const shopPOIs = pois.filter((p) => p.shopId === id)
 
   const days = range === '7d' ? 7 : 30
   const chartData = (analytics?.dailyPlays ?? []).slice(-days)
@@ -246,14 +244,13 @@ export default function AnalyticsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {(analytics?.recentLogs ?? []).slice(0, 15).map((log) => {
-                  const poi = shopPOIs.find((p) => p.id === log.poiId) || pois[0]
                 return (
                   <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">
                       {formatDateTime(log.playedAt)}
                     </td>
                     <td className="px-5 py-3 text-gray-900 dark:text-white font-medium">
-                      {poi?.name || '-'}
+                      {shop.name}
                     </td>
                     <td className="px-5 py-3">
                       <span className="text-gray-600 dark:text-gray-400 text-xs">{log.language.toUpperCase()}</span>

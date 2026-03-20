@@ -7,11 +7,6 @@ interface LanguageDto {
   name: string
 }
 
-interface CategoryDto {
-  value: string
-  label: string
-}
-
 const LANGUAGE_FLAGS: Record<string, string> = {
   vi: 'VN',
   en: 'EN',
@@ -32,11 +27,10 @@ const toLanguage = (language: LanguageDto): MetadataLanguage => ({
 
 export const metadataApi = {
   async getLanguages() {
-    const response = await apiClient.request<LanguageDto[]>('/api/v1/metadata/languages', { auth: false })
+    const response = await apiClient.request<LanguageDto[]>('/api/v1/languages', { auth: false })
     return response.map(toLanguage)
   },
   async getCategories() {
-    const response = await apiClient.request<CategoryDto[]>('/api/v1/metadata/categories', { auth: false })
-    return response.map((category): MetadataCategory => ({ value: category.value, label: category.label }))
+    return [{ value: 'stall', label: 'Địa điểm' }] satisfies MetadataCategory[]
   },
 }

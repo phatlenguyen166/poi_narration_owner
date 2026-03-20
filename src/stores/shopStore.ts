@@ -5,6 +5,7 @@ import type {
   AnalyticsSummary,
   DailySeriesPoint,
   LanguageBreakdownItem,
+  NarrationGuide,
   Notification,
   PlaybackLogItem,
   POI,
@@ -30,6 +31,7 @@ interface DashboardState {
 interface ShopState {
   shops: Shop[]
   pois: POI[]
+  guidesByStall: Record<string, NarrationGuide[]>
   notifications: Notification[]
   dashboard: DashboardState
   analyticsByShop: Record<string, ShopAnalyticsState>
@@ -62,6 +64,7 @@ const initialDashboard = (): DashboardState => ({
 export const useShopStore = create<ShopState>()((set, get) => ({
   shops: [],
   pois: [],
+  guidesByStall: {},
   notifications: [],
   dashboard: initialDashboard(),
   analyticsByShop: {},
@@ -71,8 +74,8 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   fetchShops: async () => {
     set({ isLoading: true })
     try {
-      const { shops, pois } = await ownerApi.getStalls()
-      set({ shops, pois, isLoading: false })
+      const { shops, guidesByStall } = await ownerApi.getStalls()
+      set({ shops, pois: [], guidesByStall, isLoading: false })
     } catch (error) {
       set({ isLoading: false })
       throw error
@@ -98,8 +101,6 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     const updated = await ownerApi.updateStall(id, {
       name: data.name ?? existing.name,
       description: data.description ?? existing.description,
-      category: data.category ?? existing.category,
-      thumbnailUrl: data.thumbnail ?? existing.thumbnail,
       isActive: data.isActive ?? existing.isActive,
       address: data.address ?? existing.address,
       latitude: data.latitude ?? existing.latitude ?? 0,
@@ -122,8 +123,6 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     const updated = await ownerApi.updateStall(id, {
       name: shop.name,
       description: shop.description,
-      category: shop.category,
-      thumbnailUrl: shop.thumbnail,
       isActive: !shop.isActive,
       address: shop.address,
       latitude: shop.latitude ?? 0,
@@ -137,23 +136,12 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   addPOI: (poi) => set((state) => ({ pois: [...state.pois.filter((item) => item.id !== poi.id), poi] })),
 
   updatePOI: async (id, data) => {
-    const existing = get().pois.find((poi) => poi.id === id)
-    if (!existing) return
-    const updated = await ownerApi.updatePoi(id, {
-      name: data.name ?? existing.name,
-      latitude: data.lat ?? existing.lat,
-      longitude: data.lng ?? existing.lng,
-      radiusMeters: data.radius ?? existing.radius,
-      priority: data.priority ?? existing.priority,
-      active: data.isActive ?? existing.isActive,
-    })
     set((state) => ({
-      pois: state.pois.map((poi) => (poi.id === id ? { ...poi, ...updated } : poi)),
+      pois: state.pois.map((poi) => (poi.id === id ? { ...poi, ...data } : poi)),
     }))
   },
 
   deletePOI: async (id) => {
-    await ownerApi.deletePoi(id)
     set((state) => ({
       pois: state.pois.filter((poi) => poi.id !== id),
       shops: state.shops.map((shop) => ({

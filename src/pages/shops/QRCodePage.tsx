@@ -5,21 +5,18 @@ import { Download, Copy, Printer, MapPin, Store, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useShopStore } from '@/stores/shopStore'
-import { useMetadataStore } from '@/stores/metadataStore'
 import toast from 'react-hot-toast'
 
 export default function QRCodePage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { shops, fetchShops, fetchQrCode, qrCodes } = useShopStore()
-  const { fetchMetadata, getCategoryLabel } = useMetadataStore()
   const shop = shops.find((s) => s.id === id)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     void fetchShops()
-    void fetchMetadata()
-  }, [fetchMetadata, fetchShops])
+  }, [fetchShops])
 
   useEffect(() => {
     if (id) {
@@ -37,8 +34,6 @@ export default function QRCodePage() {
   }
 
   const qrValue = qrCodes[shop.id]?.resolvedUrl || ''
-  const categoryLabel = getCategoryLabel(shop.category)
-
   const handleDownloadPNG = () => {
     const canvas = document.querySelector('#qr-canvas canvas') as HTMLCanvasElement
     if (!canvas) return
@@ -159,7 +154,7 @@ export default function QRCodePage() {
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <Store size={14} />
-                <span>{categoryLabel} · {shop.poiCount} POI</span>
+                <span>Địa điểm · {shop.audioGuideCount} audio guide</span>
               </div>
             </div>
           </div>

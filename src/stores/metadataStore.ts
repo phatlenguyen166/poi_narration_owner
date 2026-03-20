@@ -23,10 +23,7 @@ export const useMetadataStore = create<MetadataState>()((set, get) => ({
     if (get().loaded || get().isLoading) return
     set({ isLoading: true })
     try {
-      const [categories, languages] = await Promise.all([
-        metadataApi.getCategories(),
-        metadataApi.getLanguages(),
-      ])
+      const [categories, languages] = await Promise.all([metadataApi.getCategories(), metadataApi.getLanguages()])
       set({ categories, languages, isLoading: false, loaded: true })
     } catch (error) {
       set({ isLoading: false })
@@ -35,8 +32,8 @@ export const useMetadataStore = create<MetadataState>()((set, get) => ({
   },
 
   getCategoryLabel: (code) => {
-    if (!code) return ''
-    return get().categories.find((category) => category.value === code)?.label ?? code
+    if (!code) return 'Địa điểm'
+    return get().categories.find((category) => category.value === code)?.label ?? 'Địa điểm'
   },
 
   getLanguage: (code) => {
