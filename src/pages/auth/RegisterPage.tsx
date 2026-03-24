@@ -47,7 +47,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-amber-50 p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Tạo tài khoản</h2>
@@ -108,7 +108,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
           Đã có tài khoản?{' '}
-          <Link to="/login" className="text-indigo-600 hover:underline font-medium dark:text-indigo-400">
+            <Link to="/login" className="text-orange-600 hover:underline font-medium">
             Đăng nhập
           </Link>
         </p>

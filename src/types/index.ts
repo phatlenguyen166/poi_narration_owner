@@ -2,7 +2,6 @@ export interface Shop {
   id: string
   ownerId: string
   name: string
-  description: string
   category?: string
   thumbnail: string
   isActive: boolean
@@ -114,7 +113,6 @@ export interface NarrationGuide {
   stallId: string
   languageCode: string
   languageName: string
-  title: string
   scriptText: string
   audioUrl?: string
   audioDurationSeconds?: number

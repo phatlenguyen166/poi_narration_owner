@@ -8,7 +8,7 @@ const steps = [
     icon: MapPin,
     title: 'Tạo điểm thuyết minh (POI)',
     description: 'Đặt pin vị trí trên bản đồ và thiết lập vùng geofence. Khi khách bước vào vùng này, thuyết minh sẽ tự động phát.',
-    color: 'bg-indigo-100 text-indigo-600',
+    color: 'bg-orange-100 text-orange-600',
   },
   {
     icon: Volume2,
@@ -39,7 +39,7 @@ export default function OnboardingPage() {
   const step = steps[current]
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-amber-50 p-6">
       <div className="w-full max-w-lg">
         {/* Progress dots */}
         <div className="flex justify-center gap-2 mb-8">
@@ -48,7 +48,7 @@ export default function OnboardingPage() {
               key={i}
               onClick={() => setCurrent(i)}
               className={`h-2 rounded-full transition-all ${
-                i === current ? 'w-8 bg-indigo-600' : i < current ? 'w-2 bg-indigo-400' : 'w-2 bg-gray-300'
+                i === current ? 'w-8 bg-orange-500' : i < current ? 'w-2 bg-orange-300' : 'w-2 bg-gray-300'
               }`}
             />
           ))}
@@ -59,7 +59,7 @@ export default function OnboardingPage() {
             <step.icon size={36} />
           </div>
 
-          <div className="text-sm font-medium text-indigo-600 mb-2">
+              <div className="mb-2 text-sm font-medium text-orange-600">
             Bước {current + 1} / {steps.length}
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{step.title}</h2>

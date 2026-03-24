@@ -49,7 +49,7 @@ export function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
         <div
           className={cn(
             'w-11 h-6 rounded-full transition-colors',
-            checked ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600',
+          checked ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
         />

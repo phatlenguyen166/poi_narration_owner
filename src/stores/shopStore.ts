@@ -100,7 +100,6 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     if (!existing) return
     const updated = await ownerApi.updateStall(id, {
       name: data.name ?? existing.name,
-      description: data.description ?? existing.description,
       isActive: data.isActive ?? existing.isActive,
       address: data.address ?? existing.address,
       latitude: data.latitude ?? existing.latitude ?? 0,
@@ -122,7 +121,6 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     if (!shop) return
     const updated = await ownerApi.updateStall(id, {
       name: shop.name,
-      description: shop.description,
       isActive: !shop.isActive,
       address: shop.address,
       latitude: shop.latitude ?? 0,

@@ -38,27 +38,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex bg-gradient-to-br from-orange-50 via-white to-amber-50">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-indigo-600 p-12 text-white">
+      <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-gradient-to-br from-orange-500 to-amber-500 p-12 text-white">
         <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
           <Radio size={32} className="text-white" />
         </div>
         <h1 className="text-4xl font-bold mb-4">Audio Tour</h1>
-        <p className="text-xl text-indigo-200 mb-8 text-center">
+        <p className="text-xl text-orange-100 mb-8 text-center">
           Nền tảng thuyết minh thông minh cho gian hàng của bạn
         </p>
-        <div className="space-y-4 text-sm text-indigo-100">
+        <div className="space-y-4 text-sm text-orange-50">
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-indigo-300 rounded-full" />
+            <div className="w-2 h-2 bg-orange-200 rounded-full" />
             <span>Tạo điểm thuyết minh với geofence thông minh</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-indigo-300 rounded-full" />
+            <div className="w-2 h-2 bg-orange-200 rounded-full" />
             <span>Hỗ trợ đa ngôn ngữ (VI, EN, FR, JP, KR...)</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-indigo-300 rounded-full" />
+            <div className="w-2 h-2 bg-orange-200 rounded-full" />
             <span>Thống kê lượt nghe theo thời gian thực</span>
           </div>
         </div>
@@ -68,13 +68,13 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
               <Radio size={24} className="text-white" />
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Đăng nhập</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Đăng nhập</h2>
+          <p className="text-gray-500 mb-8">
             Chào mừng trở lại! Vui lòng đăng nhập tài khoản.
           </p>
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
             />
 
             <div className="flex justify-end">
-              <a href="#" className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+              <a href="#" className="text-sm text-orange-600 hover:underline">
                 Quên mật khẩu?
               </a>
             </div>
@@ -113,15 +113,15 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+          <p className="text-center text-sm text-gray-500 mt-6">
             Chưa có tài khoản?{' '}
-            <Link to="/register" className="text-indigo-600 hover:underline dark:text-indigo-400 font-medium">
+            <Link to="/register" className="text-orange-600 hover:underline font-medium">
               Đăng ký ngay
             </Link>
           </p>
 
-          <div className="mt-6 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
-            <p className="text-xs text-indigo-700 dark:text-indigo-300 text-center">
+          <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-3">
+            <p className="text-center text-xs text-orange-700">
               Đăng nhập bằng tài khoản owner đã đăng ký trên backend.
             </p>
           </div>
