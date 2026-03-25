@@ -19,6 +19,7 @@ export const mockShops: Shop[] = [
     isActive: true,
     address: '123 Nguyễn Huệ, Quận 1, TP.HCM',
     poiCount: 4,
+    audioGuideCount: 4,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -31,6 +32,7 @@ export const mockShops: Shop[] = [
     isActive: true,
     address: '2 Nguyễn Bỉnh Khiêm, Quận 1, TP.HCM',
     poiCount: 12,
+    audioGuideCount: 12,
     createdAt: '2024-02-01T08:00:00Z',
   },
   {
@@ -43,6 +45,7 @@ export const mockShops: Shop[] = [
     isActive: false,
     address: '45 Lê Lợi, Quận 3, TP.HCM',
     poiCount: 2,
+    audioGuideCount: 2,
     createdAt: '2024-03-10T08:00:00Z',
   },
   {
@@ -55,6 +58,7 @@ export const mockShops: Shop[] = [
     isActive: true,
     address: '8 Lê Văn Thiêm, Quận 7, TP.HCM',
     poiCount: 8,
+    audioGuideCount: 8,
     createdAt: '2024-04-05T08:00:00Z',
   },
 ]
