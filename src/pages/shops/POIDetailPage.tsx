@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Edit, Trash2, Pause, Play, MapPin, Mic, Radio } from 'lucide-react'
-import { MapContainer, TileLayer, Marker, Circle } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
+import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/Dialog'
@@ -12,14 +11,6 @@ import { useMetadataStore } from '@/stores/metadataStore'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-
-// Fix leaflet icon
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
 
 export default function POIDetailPage() {
   const { shopId, poiId } = useParams()
@@ -131,23 +122,21 @@ export default function POIDetailPage() {
             </h2>
           </div>
           <div style={{ height: '240px' }}>
-            <MapContainer
-              center={[poi.lat, poi.lng]}
-              zoom={16}
+            <Map
+              initialViewState={{
+                latitude: poi.lat,
+                longitude: poi.lng,
+                zoom: 16,
+              }}
+              mapStyle="https://api.maptiler.com/maps/streets-v2/style.json?key=LYbkJZzIsIDxy3KWt9kD"
               style={{ height: '100%', width: '100%' }}
-              zoomControl={false}
+              attributionControl={{ compact: true }}
             >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='© OpenStreetMap'
-              />
-              <Marker position={[poi.lat, poi.lng]} />
-              <Circle
-                center={[poi.lat, poi.lng]}
-                radius={poi.radius}
-                pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.15 }}
-              />
-            </MapContainer>
+              <NavigationControl position="top-right" />
+              <Marker longitude={poi.lng} latitude={poi.lat} anchor="bottom">
+                <MapPin size={30} className="text-indigo-600" fill="currentColor" strokeWidth={1.5} />
+              </Marker>
+            </Map>
           </div>
           <div className="px-4 py-3 grid grid-cols-2 gap-3 text-sm">
             <div>
