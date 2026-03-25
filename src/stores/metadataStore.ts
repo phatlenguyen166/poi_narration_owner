@@ -1,17 +1,7 @@
 import { create } from 'zustand'
 
-import { metadataApi } from '@/services/metadataApi'
-import type { MetadataCategory, MetadataLanguage } from '@/types'
-
-interface MetadataState {
-  categories: MetadataCategory[]
-  languages: MetadataLanguage[]
-  isLoading: boolean
-  loaded: boolean
-  fetchMetadata: () => Promise<void>
-  getCategoryLabel: (code?: string) => string
-  getLanguage: (code?: string) => MetadataLanguage | undefined
-}
+import { metadataService } from '@/services/metadataService'
+import type { MetadataState } from '@/types'
 
 export const useMetadataStore = create<MetadataState>()((set, get) => ({
   categories: [],
@@ -23,7 +13,7 @@ export const useMetadataStore = create<MetadataState>()((set, get) => ({
     if (get().loaded || get().isLoading) return
     set({ isLoading: true })
     try {
-      const [categories, languages] = await Promise.all([metadataApi.getCategories(), metadataApi.getLanguages()])
+      const [categories, languages] = await Promise.all([metadataService.getCategories(), metadataService.getLanguages()])
       set({ categories, languages, isLoading: false, loaded: true })
     } catch (error) {
       set({ isLoading: false })

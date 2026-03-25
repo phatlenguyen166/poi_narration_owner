@@ -1,32 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-import { authApi } from '@/services/authApi'
+import { authService } from '@/services/authService'
 import { sessionStorageService } from '@/lib/session'
-import type { Owner } from '@/types'
-
-interface RegisterPayload {
-  name: string
-  businessName?: string
-  email: string
-  password: string
-  phoneNumber?: string
-}
-
-interface AuthState {
-  user: Owner | null
-  accessToken: string | null
-  refreshToken: string | null
-  isAuthenticated: boolean
-  isHydrated: boolean
-  isBootstrapping: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
-  bootstrap: () => Promise<void>
-  logout: () => void
-  updateUser: (data: Partial<Owner>) => void
-  refreshProfile: () => Promise<void>
-}
+import type { AuthState, Owner } from '@/types'
 
 const applySession = (set: (partial: Partial<AuthState>) => void, user: Owner, accessToken: string, refreshToken: string) => {
   sessionStorageService.setTokens({ accessToken, refreshToken })
@@ -50,11 +27,11 @@ export const useAuthStore = create<AuthState>()(
       isHydrated: false,
       isBootstrapping: false,
       login: async (email, password) => {
-        const session = await authApi.login({ email, password })
+        const session = await authService.login({ email, password })
         applySession(set, session.user, session.accessToken, session.refreshToken)
       },
       register: async ({ name, businessName, email, password, phoneNumber }) => {
-        const session = await authApi.register({ name, businessName, email, password, phoneNumber })
+        const session = await authService.register({ name, businessName, email, password, phoneNumber })
         applySession(set, session.user, session.accessToken, session.refreshToken)
       },
       bootstrap: async () => {
@@ -75,7 +52,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isBootstrapping: true })
 
         try {
-          const user = await authApi.me()
+          const user = await authService.me()
           set({
             user,
             accessToken: tokens.accessToken,
@@ -110,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (data) =>
         set((state) => ({ user: state.user ? { ...state.user, ...data } : null })),
       refreshProfile: async () => {
-        const user = await authApi.me()
+        const user = await authService.me()
         set((state) => ({
           user,
           accessToken: state.accessToken,

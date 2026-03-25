@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Badge'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/stores/authStore'
-import { authApi } from '@/services/authApi'
+import { authService } from '@/services/authService'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import type { OwnerPlan, OwnerSettings } from '@/types'
@@ -75,7 +75,7 @@ export default function SettingsPage() {
     const loadSettings = async () => {
       setSettingsLoading(true)
       try {
-        const nextSettings = await authApi.getSettings()
+        const nextSettings = await authService.getSettings()
         if (!mounted) return
         setSettings(nextSettings)
         setNotifSettings(nextSettings.notifications)
@@ -96,13 +96,13 @@ export default function SettingsPage() {
   }, [])
 
   const handleSaveAccount = accountForm.handleSubmit(async (data) => {
-    const nextUser = await authApi.updateProfile(data)
+    const nextUser = await authService.updateProfile(data)
     updateUser(nextUser)
     toast.success('Đã cập nhật thông tin tài khoản')
   })
 
   const handleChangePassword = passwordForm.handleSubmit(async ({ currentPassword, newPassword }) => {
-    await authApi.changePassword({ currentPassword, newPassword })
+    await authService.changePassword({ currentPassword, newPassword })
     passwordForm.reset()
     toast.success('Đã đổi mật khẩu thành công')
   })
@@ -110,7 +110,7 @@ export default function SettingsPage() {
   const handleSaveNotifications = async () => {
     setSavingNotifications(true)
     try {
-      const notifications = await authApi.updateNotificationSettings(notifSettings)
+      const notifications = await authService.updateNotificationSettings(notifSettings)
       setNotifSettings(notifications)
       setSettings((current) => current ? { ...current, notifications } : current)
       toast.success('Đã lưu cài đặt thông báo')
@@ -124,7 +124,7 @@ export default function SettingsPage() {
   const handleChangePlan = async (planId: OwnerPlan['id']) => {
     setChangingPlanId(planId)
     try {
-      const nextSettings = await authApi.changeSubscription(planId)
+      const nextSettings = await authService.changeSubscription(planId)
       setSettings(nextSettings)
       setNotifSettings(nextSettings.notifications)
       await refreshProfile()

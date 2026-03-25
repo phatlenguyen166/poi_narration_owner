@@ -1,57 +1,7 @@
 import { create } from 'zustand'
 
-import { ownerApi } from '@/services/ownerApi'
-import type {
-  AnalyticsSummary,
-  DailySeriesPoint,
-  LanguageBreakdownItem,
-  NarrationGuide,
-  Notification,
-  PlaybackLogItem,
-  POI,
-  QrCodePayload,
-  Shop,
-} from '@/types'
-
-interface ShopAnalyticsState {
-  summary: AnalyticsSummary
-  dailyPlays: DailySeriesPoint[]
-  languageBreakdown: LanguageBreakdownItem[]
-  recentLogs: PlaybackLogItem[]
-}
-
-interface DashboardState {
-  todayPlays: number
-  weekPlays: number
-  monthPlays: number
-  activePoiCount: number
-  recentDailyPlays: DailySeriesPoint[]
-}
-
-interface ShopState {
-  shops: Shop[]
-  pois: POI[]
-  guidesByStall: Record<string, NarrationGuide[]>
-  notifications: Notification[]
-  dashboard: DashboardState
-  analyticsByShop: Record<string, ShopAnalyticsState>
-  qrCodes: Record<string, QrCodePayload>
-  isLoading: boolean
-  fetchShops: () => Promise<void>
-  fetchDashboard: () => Promise<void>
-  addShop: (shop: Shop) => void
-  updateShop: (id: string, data: Partial<Shop>) => Promise<void>
-  deleteShop: (id: string) => Promise<void>
-  toggleShopActive: (id: string) => Promise<void>
-  addPOI: (poi: POI) => void
-  updatePOI: (id: string, data: Partial<POI>) => Promise<void>
-  deletePOI: (id: string) => Promise<void>
-  getPOIsByShop: (shopId: string) => POI[]
-  upsertPoiForShop: (shopId: string, poi: POI) => void
-  saveAnalytics: (shopId: string, analytics: ShopAnalyticsState) => void
-  fetchAnalytics: (shopId: string) => Promise<ShopAnalyticsState>
-  fetchQrCode: (shopId: string) => Promise<QrCodePayload>
-}
+import { ownerService } from '@/services/ownerService'
+import type { DashboardState, ShopState } from '@/types'
 
 const initialDashboard = (): DashboardState => ({
   todayPlays: 0,
@@ -74,7 +24,7 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   fetchShops: async () => {
     set({ isLoading: true })
     try {
-      const { shops, guidesByStall } = await ownerApi.getStalls()
+      const { shops, guidesByStall } = await ownerService.getStalls()
       set({ shops, pois: [], guidesByStall, isLoading: false })
     } catch (error) {
       set({ isLoading: false })
@@ -83,7 +33,7 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   },
 
   fetchDashboard: async () => {
-    const response = await ownerApi.getDashboard()
+    const response = await ownerService.getDashboard()
     set({
       dashboard: {
         ...response.summary,
@@ -98,7 +48,7 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   updateShop: async (id, data) => {
     const existing = get().shops.find((shop) => shop.id === id)
     if (!existing) return
-    const updated = await ownerApi.updateStall(id, {
+    const updated = await ownerService.updateStall(id, {
       name: data.name ?? existing.name,
       description: data.description ?? existing.description,
       isActive: data.isActive ?? existing.isActive,
@@ -110,7 +60,7 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   },
 
   deleteShop: async (id) => {
-    await ownerApi.deleteStall(id)
+    await ownerService.deleteStall(id)
     set((state) => ({
       shops: state.shops.filter((shop) => shop.id !== id),
       pois: state.pois.filter((poi) => poi.shopId !== id),
@@ -120,7 +70,7 @@ export const useShopStore = create<ShopState>()((set, get) => ({
   toggleShopActive: async (id) => {
     const shop = get().shops.find((item) => item.id === id)
     if (!shop) return
-    const updated = await ownerApi.updateStall(id, {
+    const updated = await ownerService.updateStall(id, {
       name: shop.name,
       description: shop.description,
       isActive: !shop.isActive,
@@ -175,13 +125,13 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     })),
 
   fetchAnalytics: async (shopId) => {
-    const analytics = await ownerApi.getAnalytics(shopId)
+    const analytics = await ownerService.getAnalytics(shopId)
     get().saveAnalytics(shopId, analytics)
     return analytics
   },
 
   fetchQrCode: async (shopId) => {
-    const qrCode = await ownerApi.getQrCode(shopId)
+    const qrCode = await ownerService.getQrCode(shopId)
     set((state) => ({
       qrCodes: {
         ...state.qrCodes,

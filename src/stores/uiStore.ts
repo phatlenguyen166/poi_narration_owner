@@ -1,13 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-interface UIState {
-  sidebarCollapsed: boolean
-  darkMode: boolean
-  toggleSidebar: () => void
-  toggleDarkMode: () => void
-  setSidebarCollapsed: (v: boolean) => void
-}
+import type { UIState } from '@/types'
 
 export const useUIStore = create<UIState>()(
   persist(

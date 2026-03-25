@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { MapStep } from './MapStep'
 import { ContentStep, type NarrationDraft } from './ContentStep'
-import { ownerApi } from '@/services/ownerApi'
+import { ownerService } from '@/services/ownerService'
 import type { NarrationGuide } from '@/types'
 
 const step1Schema = z.object({
@@ -88,7 +88,7 @@ export default function ShopFormPage() {
     const hydrate = async () => {
       setLoadingExisting(true)
       try {
-        const { shop, guides } = await ownerApi.getStall(id)
+        const { shop, guides } = await ownerService.getStall(id)
         if (!mounted) return
 
         form1.reset({
@@ -147,11 +147,11 @@ export default function ShopFormPage() {
         isActive: basic.isActive,
       }
 
-      const shop = isEdit && id ? await ownerApi.updateStall(id, payload) : await ownerApi.createStall(payload)
+      const shop = isEdit && id ? await ownerService.updateStall(id, payload) : await ownerService.createStall(payload)
 
       let nextGuides: NarrationGuide[] = generatedGuides
       if (submitApproval && narrationDraft.sourceText.trim()) {
-        nextGuides = await ownerApi.generateNarration(shop.id, {
+        nextGuides = await ownerService.generateNarration(shop.id, {
           title: narrationDraft.title || `Thuyết minh ${basic.name}`,
           sourceText: narrationDraft.sourceText.trim(),
           sourceLanguageCode: 'vi',
@@ -159,7 +159,7 @@ export default function ShopFormPage() {
           approvalStatus: submitApproval ? 'PENDING' : 'PENDING',
         })
       } else if (narrationDraft.sourceText.trim()) {
-        const draftGuide = await ownerApi.saveDraftNarration(shop.id, {
+        const draftGuide = await ownerService.saveDraftNarration(shop.id, {
           languageCode: 'vi',
           title: narrationDraft.title || `Thuyết minh ${basic.name}`,
           scriptText: narrationDraft.sourceText.trim(),
@@ -170,7 +170,7 @@ export default function ShopFormPage() {
       }
 
       if (submitApproval) {
-        await ownerApi.submitApproval(shop.id)
+        await ownerService.submitApproval(shop.id)
       }
 
       setGeneratedGuides(nextGuides)
