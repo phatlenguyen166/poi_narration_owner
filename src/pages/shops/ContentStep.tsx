@@ -5,6 +5,7 @@ import type { NarrationGuide } from '@/types'
 export interface NarrationDraft {
   sourceText: string
   sourceLanguageCode: string
+  title?: string
 }
 
 interface ContentStepProps {
