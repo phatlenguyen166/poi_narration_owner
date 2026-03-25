@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client'
+import { env } from '@/lib/env'
 import type {
   DailySeriesPoint,
   NarrationGuide,
@@ -10,7 +11,6 @@ import type {
 interface StallDto {
   id: number | string
   name: string
-  description?: string
   address?: string
   latitude?: number
   longitude?: number
@@ -25,7 +25,6 @@ interface StallAudioGuideDto {
   stallId: number | string
   languageCode: string
   languageName: string
-  title: string
   scriptText: string
   audioUrl?: string
   audioDurationSeconds?: number
@@ -57,11 +56,20 @@ interface AnalyticsDto {
 const DEFAULT_STALL_IMAGE =
   'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=1200&h=800&fit=crop'
 
+const resolveApiUrl = (path: string | undefined): string | undefined => {
+  if (!path) {
+    return undefined
+  }
+  if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:')) {
+    return path
+  }
+  return `${env.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`
+}
+
 const mapShop = (dto: StallDto): Shop => ({
   id: String(dto.id),
   ownerId: '',
   name: dto.name,
-  description: dto.description ?? '',
   category: 'stall',
   thumbnail: DEFAULT_STALL_IMAGE,
   isActive: dto.active ?? true,
@@ -80,9 +88,8 @@ const mapGuide = (dto: StallAudioGuideDto): NarrationGuide => ({
   stallId: String(dto.stallId),
   languageCode: dto.languageCode,
   languageName: dto.languageName,
-  title: dto.title,
   scriptText: dto.scriptText,
-  audioUrl: dto.audioUrl,
+  audioUrl: resolveApiUrl(dto.audioUrl),
   audioDurationSeconds: dto.audioDurationSeconds,
   active: dto.active,
   approvalStatus: dto.approvalStatus,
@@ -91,7 +98,6 @@ const mapGuide = (dto: StallAudioGuideDto): NarrationGuide => ({
 
 export interface CreateStallPayload {
   name: string
-  description: string
   address: string
   latitude: number
   longitude: number
@@ -99,7 +105,6 @@ export interface CreateStallPayload {
 }
 
 export interface GenerateNarrationPayload {
-  title?: string
   sourceText: string
   sourceLanguageCode?: string
   targetLanguageCodes?: string[]
@@ -109,7 +114,6 @@ export interface GenerateNarrationPayload {
 
 export interface SaveDraftNarrationPayload {
   languageCode: string
-  title: string
   scriptText: string
   active?: boolean
   approvalStatus?: string
@@ -167,7 +171,6 @@ export const ownerApi = {
       method: 'POST',
       body: {
         name: payload.name,
-        description: payload.description,
         address: payload.address,
         latitude: payload.latitude,
         longitude: payload.longitude,
@@ -183,7 +186,6 @@ export const ownerApi = {
       method: 'PUT',
       body: {
         name: payload.name ?? current.name,
-        description: payload.description ?? current.description ?? '',
         address: payload.address ?? current.address ?? '',
         latitude: payload.latitude ?? current.latitude ?? 0,
         longitude: payload.longitude ?? current.longitude ?? 0,
@@ -205,7 +207,6 @@ export const ownerApi = {
     }>(`/api/v1/owner/stalls/${stallId}/audio-guides/generate`, {
       method: 'POST',
       body: {
-        title: payload.title,
         sourceText: payload.sourceText,
         sourceLanguageCode: payload.sourceLanguageCode ?? 'vi',
         targetLanguageCodes: payload.targetLanguageCodes,
@@ -222,7 +223,6 @@ export const ownerApi = {
       method: 'POST',
       body: {
         languageCode: payload.languageCode,
-        title: payload.title,
         scriptText: payload.scriptText,
         audioUrl: null,
         audioDurationSeconds: null,

@@ -1,9 +1,8 @@
-import { Textarea, Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import type { NarrationGuide } from '@/types'
 
 export interface NarrationDraft {
-  title: string
   sourceText: string
   sourceLanguageCode: string
 }
@@ -19,16 +18,9 @@ const DEFAULT_LANGUAGES = ['vi', 'en', 'fr', 'zh', 'ko']
 export function ContentStep({ draft, onChange, generatedGuides }: ContentStepProps) {
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300">
+      <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950/20 dark:text-orange-300">
         Backend sẽ lấy nội dung tiếng Việt, tự dịch mặc định sang <span className="font-semibold">5 ngôn ngữ</span> ({DEFAULT_LANGUAGES.join(', ')}) rồi generate mp3 và lưu file lên server.
       </div>
-
-      <Input
-        label="Tiêu đề thuyết minh"
-        placeholder="Ví dụ: Thuyết minh Landmark 81"
-        value={draft.title}
-        onChange={(event) => onChange({ ...draft, title: event.target.value })}
-      />
 
       <Textarea
         label="Nội dung thuyết minh gốc (tiếng Việt)"
@@ -58,7 +50,6 @@ export function ContentStep({ draft, onChange, generatedGuides }: ContentStepPro
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">{guide.languageName}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{guide.title}</p>
                   </div>
                   <Badge variant={guide.active ? 'success' : 'default'}>{guide.approvalStatus ?? 'PENDING'}</Badge>
                 </div>

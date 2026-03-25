@@ -38,8 +38,6 @@ function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
 
       <div className="p-4">
         <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{shop.name}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{shop.description}</p>
-
         <div className="flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
           <MapPin size={12} />
           <span className="truncate">{shop.address}</span>
@@ -158,7 +156,7 @@ export default function ShopsPage() {
       {/* FAB */}
       <button
         onClick={() => navigate('/shops/new')}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center transition-colors lg:hidden z-30"
+        className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition-colors hover:bg-orange-600 lg:hidden"
         title="Thêm gian hàng"
       >
         <Plus size={24} />

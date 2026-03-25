@@ -108,7 +108,7 @@ export default function QRCodePage() {
               {qrValue || 'Backend chưa trả QR URL cho gian hàng này'}
             </p>
             {shop.approvalStatus && (
-              <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">
+                <p className="mt-1 text-xs text-orange-600 dark:text-orange-300">
                 Trạng thái duyệt: {shop.approvalStatus}
               </p>
             )}
@@ -147,7 +147,6 @@ export default function QRCodePage() {
                   {shop.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
                 </Badge>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{shop.description}</p>
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <MapPin size={14} />
                 <span>{shop.address}</span>
@@ -160,13 +159,13 @@ export default function QRCodePage() {
           </div>
 
           {/* Preview what visitors see */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-700 p-4">
-            <h3 className="font-medium text-indigo-800 dark:text-indigo-300 mb-3 text-sm">
+          <div className="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-4 dark:border-orange-700 dark:from-orange-900/10 dark:to-amber-900/10">
+            <h3 className="mb-3 text-sm font-medium text-orange-800 dark:text-orange-300">
               👁️ Khách sẽ thấy gì khi quét QR?
             </h3>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-2 text-sm shadow-sm">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">A</div>
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">Audio Tour</p>
                   <p className="text-xs text-gray-500">Trình duyệt sẽ mở trang web</p>
@@ -176,7 +175,7 @@ export default function QRCodePage() {
                 <p className="text-gray-700 dark:text-gray-300 font-medium">{shop.name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">Chào mừng bạn! Hệ thống sẽ tự động phát thuyết minh khi bạn đến gần các điểm thú vị.</p>
               </div>
-              <div className="bg-indigo-600 text-white text-xs text-center rounded-lg py-1.5 font-medium">
+              <div className="rounded-lg bg-orange-500 py-1.5 text-center text-xs font-medium text-white">
                 {qrValue ? '🎧 Bắt đầu tour ngay' : '⏳ Chờ backend cấp QR'}
               </div>
             </div>

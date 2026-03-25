@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 
 import { ProtectedLayout } from '@/components/layout/ProtectedLayout'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { useUIStore } from '@/stores/uiStore'
 
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -19,15 +18,9 @@ import GlobalAnalyticsPage from '@/pages/analytics/GlobalAnalyticsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 
 function App() {
-  const { darkMode } = useUIStore()
-
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [darkMode])
+    document.documentElement.classList.remove('dark')
+  }, [])
 
   return (
     <BrowserRouter>

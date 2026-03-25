@@ -29,12 +29,13 @@ interface StatCardProps {
   icon: React.ReactNode
   trend?: string
   trendUp?: boolean
-  color?: 'indigo' | 'emerald' | 'amber' | 'rose'
+  color?: 'orange' | 'indigo' | 'emerald' | 'amber' | 'rose'
 }
 
-export function StatCard({ label, value, icon, trend, trendUp, color = 'indigo' }: StatCardProps) {
+export function StatCard({ label, value, icon, trend, trendUp, color = 'orange' }: StatCardProps) {
   const colors = {
-    indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+    orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/10 dark:text-orange-300',
+    indigo: 'bg-orange-50 text-orange-600 dark:bg-orange-900/10 dark:text-orange-300',
     emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
     amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
     rose: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',

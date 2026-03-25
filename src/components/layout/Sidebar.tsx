@@ -39,16 +39,16 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={cn(
-        'flex items-center gap-3 px-4 py-5 bg-indigo-600 dark:bg-transparent dark:border-b dark:border-gray-700',
+        'flex items-center gap-3 px-4 py-5 bg-gradient-to-br from-orange-500 to-amber-500',
         sidebarCollapsed ? 'justify-center' : ''
       )}>
-        <div className="flex-shrink-0 w-8 h-8 bg-white/20 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
+        <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
           <Radio size={16} className="text-white" />
         </div>
         {!sidebarCollapsed && (
           <span className="font-bold text-white text-sm leading-tight">
             Audio Tour<br />
-            <span className="text-indigo-200 dark:text-indigo-400 font-normal text-xs">Owner Portal</span>
+            <span className="text-orange-100 font-normal text-xs">Owner Portal</span>
           </span>
         )}
       </div>
@@ -63,8 +63,8 @@ export function Sidebar() {
               cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:ring-0 dark:bg-indigo-900/30 dark:text-indigo-300'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
+                  ? 'bg-orange-50 text-orange-700 ring-1 ring-orange-200'
+                  : 'text-gray-500 hover:bg-orange-50 hover:text-orange-700',
                 sidebarCollapsed && 'justify-center'
               )
             }

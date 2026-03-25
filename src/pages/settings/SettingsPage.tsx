@@ -172,7 +172,7 @@ export default function SettingsPage() {
                   alt="avatar"
                   className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-200 dark:border-gray-600"
                 />
-                <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors">
+              <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600">
                   <Camera size={12} />
                 </button>
               </div>
@@ -300,8 +300,8 @@ export default function SettingsPage() {
       {/* Plan Tab */}
       {activeTab === 'plan' && (
         <div className="space-y-4">
-          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-4">
-            <p className="text-sm text-indigo-800 dark:text-indigo-300">
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-900/10">
+            <p className="text-sm text-orange-800 dark:text-orange-300">
               <strong>Gói hiện tại:</strong> {settings?.currentPlan?.toUpperCase() ?? user?.plan?.toUpperCase()}
               {settings?.renewalAt ? ` · Gia hạn tự động vào ${new Date(settings.renewalAt).toLocaleDateString('vi-VN')}` : ''}
             </p>
@@ -314,7 +314,7 @@ export default function SettingsPage() {
                 className={cn(
                   'bg-white dark:bg-gray-800 rounded-xl border-2 p-5 transition-colors',
                   plan.current
-                    ? 'border-indigo-500 dark:border-indigo-400'
+                    ? 'border-orange-500 dark:border-orange-400'
                     : 'border-gray-200 dark:border-gray-700',
                 )}
               >

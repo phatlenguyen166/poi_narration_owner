@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Bell, Moon, Sun, Menu } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -16,7 +16,7 @@ interface HeaderProps {
 }
 
 export function Header({ breadcrumbs = [] }: HeaderProps) {
-  const { darkMode, toggleDarkMode, toggleSidebar } = useUIStore()
+  const { toggleSidebar } = useUIStore()
   const { notifications } = useShopStore()
   const [showNotif, setShowNotif] = useState(false)
   const navigate = useNavigate()
@@ -39,7 +39,7 @@ export function Header({ breadcrumbs = [] }: HeaderProps) {
               {crumb.to ? (
                 <button
                   onClick={() => navigate(crumb.to!)}
-                  className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                  className="text-gray-500 hover:text-orange-600 transition-colors"
                 >
                   {crumb.label}
                 </button>
@@ -53,15 +53,6 @@ export function Header({ breadcrumbs = [] }: HeaderProps) {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {/* Dark mode */}
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
-          title={darkMode ? 'Chế độ sáng' : 'Chế độ tối'}
-        >
-          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-
         {/* Notifications */}
         <div className="relative">
           <button
@@ -94,7 +85,7 @@ export function Header({ breadcrumbs = [] }: HeaderProps) {
                       key={n.id}
                       className={cn(
                         'px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0',
-                        !n.read && 'bg-indigo-50/50 dark:bg-indigo-900/10'
+                        !n.read && 'bg-orange-50'
                       )}
                     >
                       <div className="flex gap-2">
