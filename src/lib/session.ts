@@ -1,10 +1,7 @@
+import type { SessionTokens } from '@/types'
+
 const ACCESS_TOKEN_KEY = 'owner-access-token'
 const REFRESH_TOKEN_KEY = 'owner-refresh-token'
-
-export interface SessionTokens {
-  accessToken: string
-  refreshToken: string
-}
 
 export const sessionStorageService = {
   getTokens(): SessionTokens | null {

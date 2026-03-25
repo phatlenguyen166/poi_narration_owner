@@ -1,11 +1,5 @@
-import { apiClient } from '@/lib/api-client'
-import type { MetadataCategory, MetadataLanguage } from '@/types'
-
-interface LanguageDto {
-  id: number | string
-  code: string
-  name: string
-}
+import { metadataApi } from '@/apis/metadataApi'
+import type { LanguageDto, MetadataCategory, MetadataLanguage } from '@/types'
 
 const LANGUAGE_FLAGS: Record<string, string> = {
   vi: 'VN',
@@ -25,11 +19,12 @@ const toLanguage = (language: LanguageDto): MetadataLanguage => ({
   flag: LANGUAGE_FLAGS[language.code] ?? language.code.toUpperCase(),
 })
 
-export const metadataApi = {
+export const metadataService = {
   async getLanguages() {
-    const response = await apiClient.request<LanguageDto[]>('/api/v1/languages', { auth: false })
+    const response = await metadataApi.getLanguages()
     return response.map(toLanguage)
   },
+
   async getCategories() {
     return [{ value: 'stall', label: 'Địa điểm' }] satisfies MetadataCategory[]
   },

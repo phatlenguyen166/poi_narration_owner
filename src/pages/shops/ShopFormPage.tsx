@@ -5,18 +5,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { Toggle } from '@/components/ui/Badge'
 import { useShopStore } from '@/stores/shopStore'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { MapStep } from './MapStep'
 import { ContentStep, type NarrationDraft } from './ContentStep'
-import { ownerApi } from '@/services/ownerApi'
+import { ownerService } from '@/services/ownerService'
 import type { NarrationGuide } from '@/types'
 
 const step1Schema = z.object({
   name: z.string().min(2, 'Tên địa điểm tối thiểu 2 ký tự'),
+  description: z.string().optional(),
   address: z.string().min(3, 'Vui lòng nhập địa chỉ hoặc mô tả vị trí'),
   isActive: z.boolean(),
 })
@@ -54,6 +55,7 @@ export default function ShopFormPage() {
     lng: 106.7009,
   })
   const [narrationDraft, setNarrationDraft] = useState<NarrationDraft>({
+    title: '',
     sourceText: '',
     sourceLanguageCode: 'vi',
   })
@@ -65,6 +67,7 @@ export default function ShopFormPage() {
     resolver: zodResolver(step1Schema),
     defaultValues: {
       name: existingShop?.name || prefilledShopName,
+      description: existingShop?.description || '',
       address: existingShop?.address || '',
       isActive: existingShop?.isActive ?? true,
     },
@@ -85,11 +88,12 @@ export default function ShopFormPage() {
     const hydrate = async () => {
       setLoadingExisting(true)
       try {
-        const { shop, guides } = await ownerApi.getStall(id)
+        const { shop, guides } = await ownerService.getStall(id)
         if (!mounted) return
 
         form1.reset({
           name: shop.name,
+          description: shop.description,
           address: shop.address,
           isActive: shop.isActive,
         })
@@ -104,6 +108,7 @@ export default function ShopFormPage() {
 
         const vietnameseGuide = guides.find((guide) => guide.languageCode === 'vi')
         setNarrationDraft({
+          title: vietnameseGuide?.title ?? `Thuyết minh ${shop.name}`,
           sourceText: vietnameseGuide?.scriptText ?? '',
           sourceLanguageCode: 'vi',
         })
@@ -135,25 +140,28 @@ export default function ShopFormPage() {
 
       const payload = {
         name: basic.name,
+        description: basic.description ?? '',
         address: basic.address,
         latitude: step2Data.lat,
         longitude: step2Data.lng,
         isActive: basic.isActive,
       }
 
-      const shop = isEdit && id ? await ownerApi.updateStall(id, payload) : await ownerApi.createStall(payload)
+      const shop = isEdit && id ? await ownerService.updateStall(id, payload) : await ownerService.createStall(payload)
 
       let nextGuides: NarrationGuide[] = generatedGuides
       if (submitApproval && narrationDraft.sourceText.trim()) {
-        nextGuides = await ownerApi.generateNarration(shop.id, {
+        nextGuides = await ownerService.generateNarration(shop.id, {
+          title: narrationDraft.title || `Thuyết minh ${basic.name}`,
           sourceText: narrationDraft.sourceText.trim(),
           sourceLanguageCode: 'vi',
           active: basic.isActive,
           approvalStatus: submitApproval ? 'PENDING' : 'PENDING',
         })
       } else if (narrationDraft.sourceText.trim()) {
-        const draftGuide = await ownerApi.saveDraftNarration(shop.id, {
+        const draftGuide = await ownerService.saveDraftNarration(shop.id, {
           languageCode: 'vi',
+          title: narrationDraft.title || `Thuyết minh ${basic.name}`,
           scriptText: narrationDraft.sourceText.trim(),
           active: basic.isActive,
           approvalStatus: 'PENDING',
@@ -162,7 +170,7 @@ export default function ShopFormPage() {
       }
 
       if (submitApproval) {
-        await ownerApi.submitApproval(shop.id)
+        await ownerService.submitApproval(shop.id)
       }
 
       setGeneratedGuides(nextGuides)
@@ -170,6 +178,7 @@ export default function ShopFormPage() {
       if (isEdit) {
         await updateShop(shop.id, {
           name: payload.name,
+          description: payload.description,
           address: payload.address,
           latitude: payload.latitude,
           longitude: payload.longitude,
@@ -180,7 +189,7 @@ export default function ShopFormPage() {
       toast.success(
         submitApproval
           ? 'Đã lưu địa điểm và gửi duyệt thành công'
-          : 'Đã lưu địa điểm thành công',
+          : 'Đã lưu địa điểm và generate audio guide thành công',
       )
       navigate('/shops')
     } catch (error) {
@@ -228,14 +237,14 @@ export default function ShopFormPage() {
               <div
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors',
-                  step > item.id && 'bg-orange-500 text-white',
-                  step === item.id && 'bg-orange-500 text-white ring-4 ring-orange-100 dark:ring-orange-900/30',
+                  step > item.id && 'bg-indigo-600 text-white',
+                  step === item.id && 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900',
                   step < item.id && 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
                 )}
               >
                 {step > item.id ? <Check size={14} /> : item.id}
               </div>
-              <span className={cn('hidden whitespace-nowrap text-sm sm:block', step === item.id ? 'font-semibold text-orange-600' : 'text-gray-500 dark:text-gray-400')}>
+              <span className={cn('hidden whitespace-nowrap text-sm sm:block', step === item.id ? 'font-semibold text-indigo-600' : 'text-gray-500 dark:text-gray-400')}>
                 {item.label}
               </span>
             </button>
@@ -243,7 +252,7 @@ export default function ShopFormPage() {
               <div
                 className={cn(
                   'mx-3 h-0.5 min-w-8 flex-1 transition-colors',
-                  step > item.id ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700',
+                  step > item.id ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700',
                 )}
               />
             ) : null}
@@ -261,6 +270,13 @@ export default function ShopFormPage() {
             required
             error={form1.formState.errors.name?.message}
             {...form1.register('name')}
+          />
+
+          <Textarea
+            label="Mô tả ngắn"
+            placeholder="Mô tả ngắn gọn về địa điểm..."
+            rows={4}
+            {...form1.register('description')}
           />
 
           <Input
@@ -322,6 +338,7 @@ export default function ShopFormPage() {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Địa điểm</h3>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">{step1Values.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{step1Values.description}</p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">{step1Values.address}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   {step2Data.lat.toFixed(6)}, {step2Data.lng.toFixed(6)}
@@ -330,6 +347,7 @@ export default function ShopFormPage() {
 
               <div className="space-y-2">
                 <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Thuyết minh</h3>
+                <p className="font-medium text-gray-900 dark:text-white">{narrationDraft.title || `Thuyết minh ${step1Values.name}`}</p>
                 <p className="line-clamp-6 text-sm text-gray-600 dark:text-gray-300">{narrationDraft.sourceText || 'Chưa nhập nội dung thuyết minh'}</p>
                 <div className="flex flex-wrap gap-2 pt-2">
                   {guideSummary.length > 0 ? guideSummary.map((item) => <span key={item} className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">{item}</span>) : <span className="text-xs text-gray-500 dark:text-gray-400">Sẽ generate mặc định 5 ngôn ngữ sau khi lưu</span>}

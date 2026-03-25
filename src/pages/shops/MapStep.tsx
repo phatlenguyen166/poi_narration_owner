@@ -1,27 +1,12 @@
 import { type UseFormReturn, Controller } from 'react-hook-form'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useState, useCallback, useRef } from 'react'
+import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre'
+import type { MapRef, MapLayerMouseEvent } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Navigation } from 'lucide-react'
+import { Navigation, MapPin } from 'lucide-react'
 import type { Step2Data } from './ShopFormPage'
-
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
-
-function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng)
-    },
-  })
-  return null
-}
 
 interface MapStepProps {
   form: UseFormReturn<Step2Data>
@@ -31,17 +16,35 @@ export function MapStep({ form }: MapStepProps) {
   const { control, watch, setValue, formState: { errors } } = form
   const lat = watch('lat')
   const lng = watch('lng')
+  const mapRef = useRef<MapRef>(null)
 
-  const handleMapClick = (newLat: number, newLng: number) => {
+  const [viewState, setViewState] = useState({
+    longitude: lng || 106.7009,
+    latitude: lat || 10.7769,
+    zoom: 15,
+  })
+
+  const handleMapClick = useCallback((event: MapLayerMouseEvent) => {
+    const { lng: newLng, lat: newLat } = event.lngLat
     setValue('lat', parseFloat(newLat.toFixed(6)))
     setValue('lng', parseFloat(newLng.toFixed(6)))
-  }
+  }, [setValue])
 
   const handleGetCurrentLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setValue('lat', parseFloat(pos.coords.latitude.toFixed(6)))
-        setValue('lng', parseFloat(pos.coords.longitude.toFixed(6)))
+        const newLat = parseFloat(pos.coords.latitude.toFixed(6))
+        const newLng = parseFloat(pos.coords.longitude.toFixed(6))
+        setValue('lat', newLat)
+        setValue('lng', newLng)
+        
+        if (mapRef.current) {
+          mapRef.current.flyTo({
+            center: [newLng, newLat],
+            zoom: 15,
+            duration: 1000,
+          })
+        }
       },
       () => alert('Không thể lấy vị trí hiện tại'),
     )
@@ -54,14 +57,34 @@ export function MapStep({ form }: MapStepProps) {
           Vị trí trên bản đồ <span className="text-red-500">*</span>
         </label>
         <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-600" style={{ height: '320px' }}>
-          <MapContainer center={[lat || 10.7769, lng || 106.7009]} zoom={15} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            />
-            <MapClickHandler onMapClick={handleMapClick} />
-            {lat && lng ? <Marker position={[lat, lng]} /> : null}
-          </MapContainer>
+          <Map
+            ref={mapRef}
+            {...viewState}
+            onMove={(evt) => setViewState(evt.viewState)}
+            onClick={handleMapClick}
+            mapStyle="https://api.maptiler.com/maps/streets-v2/style.json?key=LYbkJZzIsIDxy3KWt9kD"
+            style={{ width: '100%', height: '100%' }}
+            attributionControl={{ compact: true }}
+          >
+            <NavigationControl position="top-right" />
+            
+            {lat && lng && (
+              <Marker
+                longitude={lng}
+                latitude={lat}
+                anchor="bottom"
+              >
+                <div className="relative">
+                  <MapPin 
+                    size={32} 
+                    className="text-red-500 drop-shadow-lg" 
+                    fill="currentColor"
+                    strokeWidth={1.5}
+                  />
+                </div>
+              </Marker>
+            )}
+          </Map>
         </div>
         <p className="mt-1 text-xs text-gray-400">Bấm trực tiếp lên bản đồ để đặt tọa độ địa điểm.</p>
       </div>

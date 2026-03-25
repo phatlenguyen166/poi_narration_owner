@@ -1,5 +1,6 @@
 import { env } from './env'
 import { sessionStorageService } from './session'
+import type { RequestOptions } from '@/types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -11,15 +12,6 @@ export class ApiError extends Error {
     this.status = status
     this.payload = payload
   }
-}
-
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-
-interface RequestOptions {
-  method?: HttpMethod
-  body?: BodyInit | object | null
-  headers?: Record<string, string>
-  auth?: boolean
 }
 
 const jsonHeaders = {
