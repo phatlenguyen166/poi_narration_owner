@@ -10,6 +10,17 @@ import { useShopStore } from '@/stores/shopStore'
 import toast from 'react-hot-toast'
 import type { Shop } from '@/types'
 
+const getApprovalBadge = (approvalStatus?: string) => {
+  switch ((approvalStatus ?? '').toUpperCase()) {
+    case 'APPROVED':
+      return { label: 'Đã duyệt', variant: 'success' as const }
+    case 'REJECTED':
+      return { label: 'Từ chối', variant: 'danger' as const }
+    default:
+      return { label: 'Chờ duyệt', variant: 'warning' as const }
+  }
+}
+
 function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
   shop: Shop
   onEdit: () => void
@@ -18,6 +29,8 @@ function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
   onAnalytics: () => void
   onQR: () => void
 }) {
+  const approvalBadge = getApprovalBadge(shop.approvalStatus)
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md dark:hover:shadow-none transition-shadow">
       <div className="relative">
@@ -38,13 +51,17 @@ function ShopCard({ shop, onEdit, onDelete, onToggle, onAnalytics, onQR }: {
 
       <div className="p-4">
         <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{shop.name}</h3>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge variant={approvalBadge.variant}>{approvalBadge.label}</Badge>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{shop.audioGuideCount} audio guide</span>
+        </div>
         <div className="flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
           <MapPin size={12} />
           <span className="truncate">{shop.address}</span>
         </div>
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-semibold text-gray-700 dark:text-gray-200">{shop.audioGuideCount}</span> audio guide
+            {shop.approvalStatus === 'REJECTED' ? 'Cần chỉnh sửa để gửi duyệt lại' : 'Có thể cập nhật bất cứ lúc nào'}
           </span>
           <Toggle checked={shop.isActive} onChange={onToggle} />
         </div>

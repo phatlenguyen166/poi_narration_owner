@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Bell, Menu } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/utils'
 import { useShopStore } from '@/stores/shopStore'
@@ -17,10 +17,14 @@ interface HeaderProps {
 
 export function Header({ breadcrumbs = [] }: HeaderProps) {
   const { toggleSidebar } = useUIStore()
-  const { notifications } = useShopStore()
+  const { notifications, fetchDashboard } = useShopStore()
   const [showNotif, setShowNotif] = useState(false)
   const navigate = useNavigate()
   const unread = notifications.filter((n) => !n.read).length
+
+  useEffect(() => {
+    void fetchDashboard().catch(() => undefined)
+  }, [fetchDashboard])
 
   return (
     <header className="h-14 flex items-center justify-between px-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none flex-shrink-0">

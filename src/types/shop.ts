@@ -5,12 +5,14 @@ export interface Shop {
   description: string
   category?: string
   thumbnail: string
+  imageUrl?: string
   isActive: boolean
   approvalStatus?: string
   qrResolvedUrl?: string
   address: string
   latitude?: number
   longitude?: number
+  triggerRadiusMeters?: number
   poiCount: number
   audioGuideCount: number
   createdAt: string
@@ -54,7 +56,7 @@ export interface NarrationGuide {
   stallId: string
   languageCode: string
   languageName: string
-  title: string
+  title?: string
   scriptText: string
   audioUrl?: string
   audioDurationSeconds?: number

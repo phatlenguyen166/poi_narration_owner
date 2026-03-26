@@ -15,6 +15,17 @@ import { useShopStore } from '@/stores/shopStore'
 import { formatNumber, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
+const getApprovalBadge = (approvalStatus?: string) => {
+  switch ((approvalStatus ?? '').toUpperCase()) {
+    case 'APPROVED':
+      return { label: 'Đã duyệt', variant: 'success' as const }
+    case 'REJECTED':
+      return { label: 'Từ chối', variant: 'danger' as const }
+    default:
+      return { label: 'Chờ duyệt', variant: 'warning' as const }
+  }
+}
+
 export default function DashboardPage() {
   const { shops, dashboard, notifications, fetchDashboard, fetchShops, toggleShopActive } = useShopStore()
   const navigate = useNavigate()
@@ -195,9 +206,14 @@ export default function DashboardPage() {
                   <td className="py-2.5 text-gray-500 dark:text-gray-400">Địa điểm</td>
                   <td className="py-2.5 text-gray-700 dark:text-gray-300">{shop.audioGuideCount}</td>
                   <td className="py-2.5">
-                    <Badge variant={shop.isActive ? 'success' : 'default'}>
-                      {shop.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={getApprovalBadge(shop.approvalStatus).variant}>
+                        {getApprovalBadge(shop.approvalStatus).label}
+                      </Badge>
+                      <Badge variant={shop.isActive ? 'success' : 'default'}>
+                        {shop.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="py-2.5">
                     <Toggle
