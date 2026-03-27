@@ -4,6 +4,7 @@
 @layer base {
   html {
     @apply antialiased;
+    font-family: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   }
 
   body {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, MapPin, Edit, BarChart2, Trash2, QrCode, Store } from 'lucide-react'
+import { Plus, Search, MapPin, Edit, BarChart2, Trash2, QrCode, Store, Map as MapIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -106,9 +106,14 @@ export default function ShopsPage() {
             {shops.length} gian hàng · {shops.filter((s) => s.isActive).length} đang hoạt động
           </p>
         </div>
-        <Button onClick={() => navigate('/shops/new')}>
-          <Plus size={16} /> Thêm gian hàng
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/shops/map')}>
+            <MapIcon size={16} /> Xem bản đồ
+          </Button>
+          <Button onClick={() => navigate('/shops/new')}>
+            <Plus size={16} /> Thêm gian hàng
+          </Button>
+        </div>
       </div>
 
       <div className="mb-5">

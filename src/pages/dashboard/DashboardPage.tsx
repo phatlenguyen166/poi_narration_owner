@@ -14,21 +14,48 @@ import { Button } from '@/components/ui/Button'
 import { useShopStore } from '@/stores/shopStore'
 import { formatNumber, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useOwnerDashboard } from '@/hooks/useOwnerDashboard'
+import { Card } from '@/components/ui/Card'
+import { SkeletonCard } from '@/components/ui/Badge'
 
 export default function DashboardPage() {
-  const { shops, dashboard, notifications, fetchDashboard, fetchShops, toggleShopActive } = useShopStore()
+  const { shops, fetchShops, toggleShopActive } = useShopStore()
   const navigate = useNavigate()
+  const { data, isPending, isError, error, refetch } = useOwnerDashboard()
 
   useEffect(() => {
-    void fetchDashboard()
     void fetchShops()
-  }, [fetchDashboard, fetchShops])
+  }, [fetchShops])
 
-  const last7 = dashboard.recentDailyPlays.slice(-7)
-  const todayPlays = dashboard.todayPlays
-  const weekPlays = dashboard.weekPlays
-  const monthPlays = dashboard.monthPlays
-  const activePOIs = dashboard.activePoiCount
+  if (isPending) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <SkeletonCard />
+      </div>
+    )
+  }
+
+  if (isError) {
+    const message = error instanceof Error ? error.message : 'Không thể tải dashboard'
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <Card className="p-6 space-y-4">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{message}</p>
+          <div className="flex gap-2">
+            <Button onClick={() => void refetch()}>Thử lại</Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  const last7 = (data?.recentDailyPlays ?? []).slice(-7)
+  const todayPlays = data?.summary.todayPlays ?? 0
+  const weekPlays = data?.summary.weekPlays ?? 0
+  const monthPlays = data?.summary.monthPlays ?? 0
+  const activePOIs = data?.summary.activePoiCount ?? 0
+  const notifications = data?.notifications ?? []
 
   const topPOIs = [...shops]
         .sort((a, b) => b.audioGuideCount - a.audioGuideCount)
@@ -59,6 +86,11 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
           Tổng quan hoạt động gian hàng của bạn
         </p>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => navigate('/approvals')}>
+            Xem approvals
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}

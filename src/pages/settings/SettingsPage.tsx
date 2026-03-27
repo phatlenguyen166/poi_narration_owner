@@ -8,10 +8,14 @@ import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Badge'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/stores/authStore'
-import { authService } from '@/services/authService'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import type { OwnerPlan, OwnerSettings } from '@/types'
+import type { OwnerPlan } from '@/types'
+import OwnerProfileCard from './OwnerProfileCard'
+import { useOwnerSettings } from '@/hooks/useOwnerSettings'
+import { useUpdateOwnerNotifications } from '@/hooks/useUpdateOwnerNotifications'
+import { useChangeSubscription } from '@/hooks/useChangeSubscription'
+import { useChangePassword } from '@/hooks/useChangePassword'
 
 type TabId = 'account' | 'notifications' | 'plan'
 
@@ -20,12 +24,6 @@ const TABS = [
   { id: 'notifications' as TabId, label: 'Thông báo', icon: Bell },
   { id: 'plan' as TabId, label: 'Gói dịch vụ', icon: CreditCard },
 ]
-
-const accountSchema = z.object({
-  name: z.string().min(2, 'Tên tối thiểu 2 ký tự'),
-  email: z.string().email('Email không hợp lệ'),
-  phoneNumber: z.string().optional(),
-})
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(6, 'Mật khẩu hiện tại tối thiểu 6 ký tự'),
@@ -36,11 +34,10 @@ const passwordSchema = z.object({
   path: ['confirmPassword'],
 })
 
-type AccountForm = z.infer<typeof accountSchema>
 type PasswordForm = z.infer<typeof passwordSchema>
 
 export default function SettingsPage() {
-  const { user, updateUser, refreshProfile } = useAuthStore()
+  const { user, refreshProfile } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabId>('account')
   const [notifSettings, setNotifSettings] = useState({
     emailPlays: true,
@@ -48,84 +45,45 @@ export default function SettingsPage() {
     pushNew: false,
     pushMilestone: true,
   })
-  const [settings, setSettings] = useState<OwnerSettings | null>(null)
-  const [settingsLoading, setSettingsLoading] = useState(true)
-  const [savingNotifications, setSavingNotifications] = useState(false)
+  const { data: settings, isPending: settingsLoading } = useOwnerSettings()
   const [changingPlanId, setChangingPlanId] = useState<OwnerPlan['id'] | null>(null)
-
-  const accountForm = useForm<AccountForm>({
-    resolver: zodResolver(accountSchema),
-    defaultValues: { name: user?.name || '', email: user?.email || '', phoneNumber: user?.phoneNumber || '' },
-  })
+  const updateNotificationsMutation = useUpdateOwnerNotifications()
+  const changeSubscriptionMutation = useChangeSubscription()
+  const changePasswordMutation = useChangePassword()
 
   const passwordForm = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   })
 
   useEffect(() => {
-    accountForm.reset({
-      name: user?.name || '',
-      email: user?.email || '',
-      phoneNumber: user?.phoneNumber || '',
-    })
-  }, [accountForm, user])
-
-  useEffect(() => {
-    let mounted = true
-    const loadSettings = async () => {
-      setSettingsLoading(true)
-      try {
-        const nextSettings = await authService.getSettings()
-        if (!mounted) return
-        setSettings(nextSettings)
-        setNotifSettings(nextSettings.notifications)
-      } catch (error) {
-        if (mounted) {
-          toast.error(error instanceof Error ? error.message : 'Không thể tải cài đặt')
-        }
-      } finally {
-        if (mounted) {
-          setSettingsLoading(false)
-        }
-      }
-    }
-    void loadSettings()
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const handleSaveAccount = accountForm.handleSubmit(async (data) => {
-    const nextUser = await authService.updateProfile(data)
-    updateUser(nextUser)
-    toast.success('Đã cập nhật thông tin tài khoản')
-  })
+    if (!settings) return
+    setNotifSettings(settings.notifications)
+  }, [settings])
 
   const handleChangePassword = passwordForm.handleSubmit(async ({ currentPassword, newPassword }) => {
-    await authService.changePassword({ currentPassword, newPassword })
-    passwordForm.reset()
-    toast.success('Đã đổi mật khẩu thành công')
+    try {
+      await changePasswordMutation.mutateAsync({ currentPassword, newPassword })
+      passwordForm.reset()
+      toast.success('Đã đổi mật khẩu thành công')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể đổi mật khẩu')
+    }
   })
 
   const handleSaveNotifications = async () => {
-    setSavingNotifications(true)
     try {
-      const notifications = await authService.updateNotificationSettings(notifSettings)
+      const notifications = await updateNotificationsMutation.mutateAsync(notifSettings)
       setNotifSettings(notifications)
-      setSettings((current) => current ? { ...current, notifications } : current)
       toast.success('Đã lưu cài đặt thông báo')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể lưu cài đặt thông báo')
-    } finally {
-      setSavingNotifications(false)
     }
   }
 
   const handleChangePlan = async (planId: OwnerPlan['id']) => {
     setChangingPlanId(planId)
     try {
-      const nextSettings = await authService.changeSubscription(planId)
-      setSettings(nextSettings)
+      const nextSettings = await changeSubscriptionMutation.mutateAsync(planId)
       setNotifSettings(nextSettings.notifications)
       await refreshProfile()
       toast.success(`Đã cập nhật gói ${planId.toUpperCase()}`)
@@ -187,34 +145,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Account Info */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Thông tin tài khoản</h2>
-            <form onSubmit={handleSaveAccount} className="space-y-4">
-              <Input
-                label="Họ tên"
-                required
-                error={accountForm.formState.errors.name?.message}
-                {...accountForm.register('name')}
-              />
-              <Input
-                label="Email"
-                type="email"
-                required
-                error={accountForm.formState.errors.email?.message}
-                {...accountForm.register('email')}
-              />
-              <Input
-                label="Số điện thoại"
-                error={accountForm.formState.errors.phoneNumber?.message}
-                {...accountForm.register('phoneNumber')}
-              />
-              <div className="flex justify-end">
-                <Button type="submit" loading={accountForm.formState.isSubmitting}>
-                  Lưu thay đổi
-                </Button>
-              </div>
-            </form>
-          </div>
+          <OwnerProfileCard />
 
           {/* Change Password */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
@@ -291,7 +222,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Button onClick={() => void handleSaveNotifications()} loading={savingNotifications}>
+          <Button onClick={() => void handleSaveNotifications()} loading={updateNotificationsMutation.isPending}>
             Lưu cài đặt
           </Button>
         </div>
