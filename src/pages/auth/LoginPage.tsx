@@ -6,6 +6,7 @@ import { Mail, Lock, Radio } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/authStore'
+import { ApiError } from '@/lib/api-client'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
@@ -32,8 +33,12 @@ export default function LoginPage() {
       await login(data.email, data.password)
       toast.success('Đăng nhập thành công!')
       navigate('/dashboard')
-    } catch {
-      toast.error('Email hoặc mật khẩu không đúng')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.message)
+        return
+      }
+      toast.error('Không thể đăng nhập. Vui lòng thử lại.')
     }
   }
 

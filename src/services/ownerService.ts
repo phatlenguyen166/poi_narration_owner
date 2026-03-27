@@ -1,7 +1,9 @@
 import {
   ownerApi,
 } from '@/apis/ownerApi'
+import { env } from '@/lib/env'
 import type {
+  ApprovalDto,
   AnalyticsDto,
   CreateStallPayload,
   CreateStallRequest,
@@ -22,19 +24,31 @@ import type {
 const DEFAULT_STALL_IMAGE =
   'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=1200&h=800&fit=crop'
 
+const resolveAssetUrl = (path?: string) => {
+  if (!path) {
+    return undefined
+  }
+  if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:')) {
+    return path
+  }
+  return `${env.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`
+}
+
 const mapShop = (dto: StallDto): Shop => ({
   id: String(dto.id),
   ownerId: '',
   name: dto.name,
   description: dto.description ?? '',
   category: 'stall',
-  thumbnail: DEFAULT_STALL_IMAGE,
+  thumbnail: resolveAssetUrl(dto.imageUrl) ?? DEFAULT_STALL_IMAGE,
+  imageUrl: dto.imageUrl,
   isActive: dto.active ?? true,
   approvalStatus: dto.approvalStatus,
   qrResolvedUrl: undefined,
   address: dto.address ?? '',
   latitude: dto.latitude,
   longitude: dto.longitude,
+  triggerRadiusMeters: dto.triggerRadiusMeters,
   poiCount: dto.audioGuideCount ?? 0,
   audioGuideCount: dto.audioGuideCount ?? 0,
   createdAt: dto.createdAt ?? new Date().toISOString(),
@@ -45,14 +59,58 @@ const mapGuide = (dto: StallAudioGuideDto): NarrationGuide => ({
   stallId: String(dto.stallId),
   languageCode: dto.languageCode,
   languageName: dto.languageName,
-  title: dto.title,
+  title: dto.title ?? '',
   scriptText: dto.scriptText,
-  audioUrl: dto.audioUrl,
+  audioUrl: resolveAssetUrl(dto.audioUrl),
   audioDurationSeconds: dto.audioDurationSeconds,
   active: dto.active,
   approvalStatus: dto.approvalStatus,
   createdAt: dto.createdAt ?? new Date().toISOString(),
 })
+
+const approvalStatusLabel = (status?: string) => {
+  switch ((status ?? '').toUpperCase()) {
+    case 'APPROVED':
+      return 'đã được duyệt'
+    case 'REJECTED':
+      return 'đã bị từ chối'
+    case 'PENDING':
+      return 'đang chờ duyệt'
+    default:
+      return 'có cập nhật trạng thái'
+  }
+}
+
+const approvalNotificationType = (status?: string): 'info' | 'warning' | 'success' => {
+  switch ((status ?? '').toUpperCase()) {
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+const buildApprovalNotifications = (shops: Shop[], approvals: ApprovalDto[]) =>
+  approvals
+    .map((approval) => {
+      const shop = shops.find((item) => item.id === String(approval.targetId))
+      const status = approval.status?.toUpperCase()
+      if (!shop || !status) {
+        return null
+      }
+
+      return {
+        id: `approval-${approval.id}-${status}`,
+        type: approvalNotificationType(status),
+        message: `Địa điểm "${shop.name}" ${approvalStatusLabel(status)}.`,
+        createdAt: approval.updatedAt ?? approval.createdAt ?? new Date().toISOString(),
+        read: status === 'PENDING',
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
 
 const mergeStallPayload = (base: StallDto, payload: Partial<CreateStallPayload>): Partial<CreateStallRequest> => ({
   name: payload.name ?? base.name,
@@ -60,13 +118,23 @@ const mergeStallPayload = (base: StallDto, payload: Partial<CreateStallPayload>)
   address: payload.address ?? base.address ?? '',
   latitude: payload.latitude ?? base.latitude ?? 0,
   longitude: payload.longitude ?? base.longitude ?? 0,
+  triggerRadiusMeters: payload.triggerRadiusMeters ?? base.triggerRadiusMeters ?? 80,
+  imageUrl: payload.imageUrl ?? base.imageUrl,
   active: payload.isActive ?? base.active ?? true,
 })
 
 export const ownerService = {
   async getDashboard() {
-    const response = await ownerApi.getDashboard()
-    return mapDashboard(response)
+    const [response, stalls, approvals] = await Promise.all([
+      ownerApi.getDashboard(),
+      ownerApi.getStalls(),
+      ownerApi.listApprovals(),
+    ])
+    const shops = stalls.map(mapShop)
+    return {
+      ...mapDashboard(response),
+      notifications: buildApprovalNotifications(shops, approvals),
+    }
   },
 
   async getStalls() {
@@ -90,6 +158,8 @@ export const ownerService = {
       address: payload.address,
       latitude: payload.latitude,
       longitude: payload.longitude,
+      triggerRadiusMeters: payload.triggerRadiusMeters,
+      imageUrl: payload.imageUrl,
       active: payload.isActive,
     })
     return mapShop(response)
@@ -167,18 +237,7 @@ const mapDashboard = (response: DashboardDto) => ({
     pendingApprovals: response.pendingApprovals ?? 0,
     totalPlays: response.monthPlays ?? 0,
   },
-  notifications:
-    (response.pendingApprovals ?? 0) > 0
-      ? [
-          {
-            id: 'pending-approvals',
-            type: 'warning' as const,
-            message: `Bạn có ${response.pendingApprovals} địa điểm đang chờ duyệt`,
-            createdAt: new Date().toISOString(),
-            read: false,
-          },
-        ]
-      : [],
+  notifications: [],
   recentDailyPlays: response.recentDailyPlays ?? ([] as DailySeriesPoint[]),
 })
 

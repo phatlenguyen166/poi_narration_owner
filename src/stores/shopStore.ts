@@ -50,10 +50,13 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     if (!existing) return
     const updated = await ownerService.updateStall(id, {
       name: data.name ?? existing.name,
+      description: data.description ?? existing.description,
       isActive: data.isActive ?? existing.isActive,
       address: data.address ?? existing.address,
       latitude: data.latitude ?? existing.latitude ?? 0,
       longitude: data.longitude ?? existing.longitude ?? 0,
+      triggerRadiusMeters: data.triggerRadiusMeters ?? existing.triggerRadiusMeters ?? 80,
+      imageUrl: data.imageUrl ?? existing.imageUrl,
     })
     set((state) => ({ shops: state.shops.map((shop) => (shop.id === id ? { ...shop, ...updated } : shop)) }))
   },
@@ -71,10 +74,13 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     if (!shop) return
     const updated = await ownerService.updateStall(id, {
       name: shop.name,
+      description: shop.description,
       isActive: !shop.isActive,
       address: shop.address,
       latitude: shop.latitude ?? 0,
       longitude: shop.longitude ?? 0,
+      triggerRadiusMeters: shop.triggerRadiusMeters ?? 80,
+      imageUrl: shop.imageUrl,
     })
     set((state) => ({
       shops: state.shops.map((item) => (item.id === id ? { ...item, ...updated } : item)),

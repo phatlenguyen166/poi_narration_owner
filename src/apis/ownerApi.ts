@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client'
 import type {
+  ApprovalDto,
   AnalyticsDto,
   CreateStallRequest,
   DashboardDto,
@@ -63,6 +64,10 @@ export const ownerApi = {
 
   listAudioGuides(stallId: string) {
     return apiClient.request<StallAudioGuideDto[]>(`/api/v1/owner/stalls/${stallId}/audio-guides`)
+  },
+
+  listApprovals() {
+    return apiClient.request<ApprovalDto[]>('/api/v1/owner/approvals')
   },
 
   uploadImage(file: File) {

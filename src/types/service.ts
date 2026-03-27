@@ -4,6 +4,8 @@ export interface CreateStallPayload {
   address: string
   latitude: number
   longitude: number
+  triggerRadiusMeters: number
+  imageUrl?: string
   isActive: boolean
 }
 
@@ -18,7 +20,7 @@ export interface GenerateNarrationPayload {
 
 export interface SaveDraftNarrationPayload {
   languageCode: string
-  title: string
+  title?: string
   scriptText: string
   active?: boolean
   approvalStatus?: string

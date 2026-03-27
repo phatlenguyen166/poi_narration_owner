@@ -57,6 +57,8 @@ export interface StallDto {
   address?: string
   latitude?: number
   longitude?: number
+  triggerRadiusMeters?: number
+  imageUrl?: string
   active?: boolean
   approvalStatus?: string
   createdAt?: string
@@ -68,7 +70,7 @@ export interface StallAudioGuideDto {
   stallId: number | string
   languageCode: string
   languageName: string
-  title: string
+  title?: string
   scriptText: string
   audioUrl?: string
   audioDurationSeconds?: number
@@ -97,12 +99,24 @@ export interface AnalyticsDto {
   recentLogs?: { languageCode?: string; languageName?: string; listenDurationSeconds?: number; createdAt?: string }[]
 }
 
+export interface ApprovalDto {
+  id: number | string
+  targetType: string
+  targetId: number | string
+  status: string
+  commentText?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface CreateStallRequest {
   name: string
   description: string
   address: string
   latitude: number
   longitude: number
+  triggerRadiusMeters: number
+  imageUrl?: string
   active: boolean
 }
 
@@ -117,7 +131,7 @@ export interface GenerateNarrationRequest {
 
 export interface SaveDraftNarrationRequest {
   languageCode: string
-  title: string
+  title?: string
   scriptText: string
   active?: boolean
   approvalStatus?: string
