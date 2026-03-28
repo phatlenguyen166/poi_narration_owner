@@ -114,7 +114,6 @@ const buildApprovalNotifications = (shops: Shop[], approvals: ApprovalDto[]) =>
 
 const mergeStallPayload = (base: StallDto, payload: Partial<CreateStallPayload>): Partial<CreateStallRequest> => ({
   name: payload.name ?? base.name,
-  description: payload.description ?? base.description ?? '',
   address: payload.address ?? base.address ?? '',
   latitude: payload.latitude ?? base.latitude ?? 0,
   longitude: payload.longitude ?? base.longitude ?? 0,
@@ -154,7 +153,6 @@ export const ownerService = {
   async createStall(payload: CreateStallPayload) {
     const response = await ownerApi.createStall({
       name: payload.name,
-      description: payload.description,
       address: payload.address,
       latitude: payload.latitude,
       longitude: payload.longitude,

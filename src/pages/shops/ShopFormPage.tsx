@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Toggle } from "@/components/ui/Badge";
 import { useShopStore } from "@/stores/shopStore";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,6 @@ import { env } from "@/lib/env";
 
 const step1Schema = z.object({
   name: z.string().min(2, "Tên địa điểm tối thiểu 2 ký tự"),
-  description: z.string().optional(),
   address: z.string().min(3, "Vui lòng nhập địa chỉ hoặc mô tả vị trí"),
   triggerRadiusMeters: z.number().min(1, "Bán kính phải lớn hơn 0"),
   imageUrl: z.string().optional(),
@@ -84,7 +83,6 @@ export default function ShopFormPage() {
     resolver: zodResolver(step1Schema),
     defaultValues: {
       name: existingShop?.name || prefilledShopName,
-      description: existingShop?.description || "",
       address: existingShop?.address || "",
       triggerRadiusMeters: existingShop?.triggerRadiusMeters ?? 80,
       imageUrl: existingShop?.imageUrl || "",
@@ -110,9 +108,12 @@ export default function ShopFormPage() {
         const { shop, guides } = await ownerService.getStall(id);
         if (!mounted) return;
 
+        const vietnameseGuide = guides.find(
+          (guide) => guide.languageCode === "vi",
+        );
+
         form1.reset({
           name: shop.name,
-          description: shop.description,
           address: shop.address,
           triggerRadiusMeters: shop.triggerRadiusMeters ?? 80,
           imageUrl: shop.imageUrl ?? "",
@@ -126,10 +127,6 @@ export default function ShopFormPage() {
         setStep2Data(nextLocation);
         form2.reset(nextLocation);
         setGeneratedGuides(guides);
-
-        const vietnameseGuide = guides.find(
-          (guide) => guide.languageCode === "vi",
-        );
         setNarrationDraft({
           title: vietnameseGuide?.title ?? `Thuyết minh ${shop.name}`,
           sourceText: vietnameseGuide?.scriptText ?? "",
@@ -154,7 +151,9 @@ export default function ShopFormPage() {
     };
   }, [form1, form2, id, isEdit]);
 
-  const handleStep1Next = form1.handleSubmit(() => setStep(2));
+  const handleStep1Next = form1.handleSubmit(() => {
+    setStep(2);
+  });
   const handleStep2Next = form2.handleSubmit((data) => {
     setStep2Data(data);
     setStep(3);
@@ -167,7 +166,6 @@ export default function ShopFormPage() {
 
       const payload = {
         name: basic.name,
-        description: basic.description ?? "",
         address: basic.address,
         latitude: step2Data.lat,
         longitude: step2Data.lng,
@@ -210,7 +208,6 @@ export default function ShopFormPage() {
       if (isEdit) {
         await updateShop(shop.id, {
           name: payload.name,
-          description: payload.description,
           address: payload.address,
           latitude: payload.latitude,
           longitude: payload.longitude,
@@ -222,7 +219,9 @@ export default function ShopFormPage() {
 
       toast.success(
         submitApproval
-          ? "Đã lưu địa điểm và gửi duyệt thành công"
+          ? isEdit
+            ? "Đã cập nhật địa điểm và chuyển sang chờ sửa"
+            : "Đã lưu địa điểm và gửi duyệt thành công"
           : "Đã lưu địa điểm và generate audio guide thành công",
       );
       navigate("/shops");
@@ -353,13 +352,6 @@ export default function ShopFormPage() {
             {...form1.register("name")}
           />
 
-          <Textarea
-            label="Mô tả ngắn"
-            placeholder="Mô tả ngắn gọn về địa điểm..."
-            rows={4}
-            {...form1.register("description")}
-          />
-
           <Input
             label="Địa chỉ"
             placeholder="Ví dụ: 720A Điện Biên Phủ, Bình Thạnh, TP.HCM"
@@ -464,9 +456,6 @@ export default function ShopFormPage() {
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {step1Values.name}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {step1Values.description}
-                </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
                   {step1Values.address}
                 </p>
@@ -521,7 +510,7 @@ export default function ShopFormPage() {
                 onClick={() => void handleSave(true)}
                 loading={isSubmitting}
               >
-                Lưu và gửi duyệt
+                {isEdit ? "Chờ sửa" : "Lưu và gửi duyệt"}
               </Button>
             </div>
           </div>
