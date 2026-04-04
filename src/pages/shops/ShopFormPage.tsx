@@ -32,6 +32,12 @@ const step2Schema = z.object({
 export type Step1Data = z.infer<typeof step1Schema>;
 export type Step2Data = z.infer<typeof step2Schema>;
 
+interface StallEditSnapshot {
+  step1: Step1Data;
+  step2: Step2Data;
+  narration: NarrationDraft;
+}
+
 const STEPS = [
   { id: 1, label: "Thông tin địa điểm" },
   { id: 2, label: "Vị trí bản đồ" },
@@ -78,6 +84,9 @@ export default function ShopFormPage() {
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState<StallEditSnapshot | null>(
+    null,
+  );
 
   const form1 = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -112,13 +121,15 @@ export default function ShopFormPage() {
           (guide) => guide.languageCode === "vi",
         );
 
-        form1.reset({
+        const nextStep1Defaults = {
           name: shop.name,
           address: shop.address,
           triggerRadiusMeters: shop.triggerRadiusMeters ?? 80,
           imageUrl: shop.imageUrl ?? "",
           isActive: shop.isActive,
-        });
+        };
+
+        form1.reset(nextStep1Defaults);
 
         const nextLocation = {
           lat: shop.latitude ?? 10.7769,
@@ -127,10 +138,16 @@ export default function ShopFormPage() {
         setStep2Data(nextLocation);
         form2.reset(nextLocation);
         setGeneratedGuides(guides);
-        setNarrationDraft({
+        const nextNarrationDraft = {
           title: vietnameseGuide?.title ?? `Thuyết minh ${shop.name}`,
           sourceText: vietnameseGuide?.scriptText ?? "",
           sourceLanguageCode: "vi",
+        };
+        setNarrationDraft(nextNarrationDraft);
+        setInitialSnapshot({
+          step1: nextStep1Defaults,
+          step2: nextLocation,
+          narration: nextNarrationDraft,
         });
       } catch (error) {
         toast.error(
@@ -151,6 +168,30 @@ export default function ShopFormPage() {
     };
   }, [form1, form2, id, isEdit]);
 
+  useEffect(() => {
+    if (isEdit) {
+      return;
+    }
+    setInitialSnapshot({
+      step1: {
+        name: prefilledShopName,
+        address: "",
+        triggerRadiusMeters: 80,
+        imageUrl: "",
+        isActive: true,
+      },
+      step2: {
+        lat: 10.7769,
+        lng: 106.7009,
+      },
+      narration: {
+        title: "",
+        sourceText: "",
+        sourceLanguageCode: "vi",
+      },
+    });
+  }, [isEdit, prefilledShopName]);
+
   const handleStep1Next = form1.handleSubmit(() => {
     setStep(2);
   });
@@ -159,11 +200,25 @@ export default function ShopFormPage() {
     setStep(3);
   });
 
+  const upsertGuideInList = (
+    guides: NarrationGuide[],
+    nextGuide: NarrationGuide,
+  ): NarrationGuide[] => {
+    const existingIndex = guides.findIndex(
+      (guide) => guide.languageCode === nextGuide.languageCode,
+    );
+    if (existingIndex === -1) {
+      return [nextGuide, ...guides];
+    }
+    const nextGuides = [...guides];
+    nextGuides[existingIndex] = nextGuide;
+    return nextGuides;
+  };
+
   const handleSave = async (submitApproval: boolean) => {
     setIsSubmitting(true);
     try {
       const basic = form1.getValues();
-
       const payload = {
         name: basic.name,
         address: basic.address,
@@ -173,6 +228,31 @@ export default function ShopFormPage() {
         imageUrl: basic.imageUrl,
         isActive: basic.isActive,
       };
+      const normalizedDraft = {
+        title: (narrationDraft.title || "").trim(),
+        sourceText: narrationDraft.sourceText.trim(),
+        sourceLanguageCode: "vi",
+      };
+      const hasInfoChanges =
+        !initialSnapshot ||
+        initialSnapshot.step1.name !== payload.name ||
+        initialSnapshot.step1.address !== payload.address ||
+        initialSnapshot.step1.triggerRadiusMeters !==
+          payload.triggerRadiusMeters ||
+        (initialSnapshot.step1.imageUrl ?? "") !== (payload.imageUrl ?? "") ||
+        initialSnapshot.step1.isActive !== payload.isActive ||
+        initialSnapshot.step2.lat !== step2Data.lat ||
+        initialSnapshot.step2.lng !== step2Data.lng;
+      const hasScriptChanges =
+        !initialSnapshot ||
+        initialSnapshot.narration.sourceText.trim() !== normalizedDraft.sourceText ||
+        (initialSnapshot.narration.title || "").trim() !==
+          normalizedDraft.title;
+
+      if (!hasInfoChanges && !hasScriptChanges) {
+        toast("Chưa có thay đổi để cập nhật.");
+        return;
+      }
 
       const shop =
         isEdit && id
@@ -180,23 +260,22 @@ export default function ShopFormPage() {
           : await ownerService.createStall(payload);
 
       let nextGuides: NarrationGuide[] = generatedGuides;
-      if (submitApproval && narrationDraft.sourceText.trim()) {
+      if (submitApproval && normalizedDraft.sourceText && hasScriptChanges) {
         nextGuides = await ownerService.generateNarration(shop.id, {
-          title: narrationDraft.title || `Thuyết minh ${basic.name}`,
-          sourceText: narrationDraft.sourceText.trim(),
+          title: normalizedDraft.title || `Thuyết minh ${basic.name}`,
+          sourceText: normalizedDraft.sourceText,
           sourceLanguageCode: "vi",
           active: basic.isActive,
           approvalStatus: submitApproval ? "PENDING" : "PENDING",
         });
-      } else if (narrationDraft.sourceText.trim()) {
+      } else if (normalizedDraft.sourceText && hasScriptChanges) {
         const draftGuide = await ownerService.saveDraftNarration(shop.id, {
           languageCode: "vi",
-          title: narrationDraft.title || `Thuyết minh ${basic.name}`,
-          scriptText: narrationDraft.sourceText.trim(),
+          scriptText: normalizedDraft.sourceText,
           active: basic.isActive,
           approvalStatus: "PENDING",
         });
-        nextGuides = [draftGuide];
+        nextGuides = upsertGuideInList(generatedGuides, draftGuide);
       }
 
       if (submitApproval) {
@@ -204,6 +283,11 @@ export default function ShopFormPage() {
       }
 
       setGeneratedGuides(nextGuides);
+      setInitialSnapshot({
+        step1: basic,
+        step2: step2Data,
+        narration: normalizedDraft,
+      });
       await fetchShops();
       if (isEdit) {
         await updateShop(shop.id, {
@@ -220,9 +304,13 @@ export default function ShopFormPage() {
       toast.success(
         submitApproval
           ? isEdit
-            ? "Đã cập nhật địa điểm và chuyển sang chờ sửa"
+            ? hasScriptChanges
+              ? "Đã cập nhật địa điểm, tạo lại audio và chuyển sang chờ sửa"
+              : "Đã cập nhật địa điểm và chuyển sang chờ sửa"
             : "Đã lưu địa điểm và gửi duyệt thành công"
-          : "Đã lưu địa điểm và generate audio guide thành công",
+          : hasScriptChanges
+            ? "Đã lưu địa điểm và cập nhật bản nháp nội dung"
+            : "Đã lưu thay đổi địa điểm thành công",
       );
       navigate("/shops");
     } catch (error) {
@@ -245,6 +333,23 @@ export default function ShopFormPage() {
       ),
     [generatedGuides],
   );
+  const hasInfoChanges =
+    !initialSnapshot ||
+    initialSnapshot.step1.name !== step1Values.name ||
+    initialSnapshot.step1.address !== step1Values.address ||
+    initialSnapshot.step1.triggerRadiusMeters !==
+      step1Values.triggerRadiusMeters ||
+    (initialSnapshot.step1.imageUrl ?? "") !== (step1Values.imageUrl ?? "") ||
+    initialSnapshot.step1.isActive !== step1Values.isActive ||
+    initialSnapshot.step2.lat !== step2Data.lat ||
+    initialSnapshot.step2.lng !== step2Data.lng;
+  const hasScriptChanges =
+    !initialSnapshot ||
+    initialSnapshot.narration.sourceText.trim() !==
+      narrationDraft.sourceText.trim() ||
+    (initialSnapshot.narration.title || "").trim() !==
+      (narrationDraft.title || "").trim();
+  const hasPendingChanges = hasInfoChanges || hasScriptChanges;
 
   if (loadingExisting) {
     return (
@@ -490,7 +595,9 @@ export default function ShopFormPage() {
                     ))
                   ) : (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Sẽ generate mặc định 5 ngôn ngữ sau khi lưu
+                      {hasScriptChanges
+                        ? "Sẽ generate mặc định 5 ngôn ngữ sau khi gửi duyệt"
+                        : "Script không đổi, sẽ giữ lại audio guide hiện có"}
                     </span>
                   )}
                 </div>
@@ -509,8 +616,13 @@ export default function ShopFormPage() {
               <Button
                 onClick={() => void handleSave(true)}
                 loading={isSubmitting}
+                disabled={!hasPendingChanges}
               >
-                {isEdit ? "Chờ sửa" : "Lưu và gửi duyệt"}
+                {isEdit
+                  ? hasPendingChanges
+                    ? "Chờ sửa"
+                    : "Chưa có thay đổi"
+                  : "Lưu và gửi duyệt"}
               </Button>
             </div>
           </div>
