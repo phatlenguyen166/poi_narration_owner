@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toggle } from "@/components/ui/Badge";
@@ -218,6 +218,23 @@ export default function ShopFormPage() {
   const handleSave = async (submitApproval: boolean) => {
     setIsSubmitting(true);
     try {
+      const [step1Valid, step2Valid] = await Promise.all([
+        form1.trigger(),
+        form2.trigger(),
+      ]);
+
+      if (!step1Valid) {
+        setStep(1);
+        toast.error("Vui lòng kiểm tra lại thông tin địa điểm.");
+        return;
+      }
+
+      if (!step2Valid) {
+        setStep(2);
+        toast.error("Vui lòng kiểm tra lại vị trí địa điểm.");
+        return;
+      }
+
       const basic = form1.getValues();
       const payload = {
         name: basic.name,
@@ -397,50 +414,36 @@ export default function ShopFormPage() {
       </div>
 
       <div className="mb-8 flex items-center overflow-x-auto pb-2">
-        {STEPS.map((item, index) => (
-          <div key={item.id} className="flex items-center">
+        <div className="flex min-w-full gap-3">
+        {STEPS.map((item) => (
+          <div key={item.id} className="min-w-0 flex-1">
             <button
-              onClick={() => step > item.id && setStep(item.id)}
+              type="button"
+              onClick={() => setStep(item.id)}
               className={cn(
-                "flex items-center gap-2",
-                step > item.id && "cursor-pointer",
+                "flex w-full items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
+                step === item.id
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/30 dark:text-indigo-200"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-300",
               )}
             >
-              <div
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors",
-                  step > item.id && "bg-indigo-600 text-white",
-                  step === item.id &&
-                    "bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900",
-                  step < item.id &&
-                    "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
-                )}
-              >
-                {step > item.id ? <Check size={14} /> : item.id}
-              </div>
               <span
                 className={cn(
-                  "hidden whitespace-nowrap text-sm sm:block",
+                  "mr-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold",
                   step === item.id
-                    ? "font-semibold text-indigo-600"
-                    : "text-gray-500 dark:text-gray-400",
+                    ? "bg-indigo-600 text-white dark:bg-indigo-500"
+                    : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300",
                 )}
               >
+                {item.id}
+              </span>
+              <span className="whitespace-nowrap text-sm">
                 {item.label}
               </span>
             </button>
-            {index < STEPS.length - 1 ? (
-              <div
-                className={cn(
-                  "mx-3 h-0.5 min-w-8 flex-1 transition-colors",
-                  step > item.id
-                    ? "bg-indigo-600"
-                    : "bg-gray-200 dark:bg-gray-700",
-                )}
-              />
-            ) : null}
           </div>
         ))}
+        </div>
       </div>
 
       {step === 1 ? (
