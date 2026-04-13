@@ -16,6 +16,8 @@ import { useOwnerSettings } from '@/hooks/useOwnerSettings'
 import { useUpdateOwnerNotifications } from '@/hooks/useUpdateOwnerNotifications'
 import { useChangeSubscription } from '@/hooks/useChangeSubscription'
 import { useChangePassword } from '@/hooks/useChangePassword'
+import { settingsApi } from '@/apis/settingsApi' 
+
 
 type TabId = 'account' | 'notifications' | 'plan'
 
@@ -83,12 +85,15 @@ export default function SettingsPage() {
   const handleChangePlan = async (planId: OwnerPlan['id']) => {
     setChangingPlanId(planId)
     try {
-      const nextSettings = await changeSubscriptionMutation.mutateAsync(planId)
-      setNotifSettings(nextSettings.notifications)
-      await refreshProfile()
-      toast.success(`Đã cập nhật gói ${planId.toUpperCase()}`)
+      const response = await settingsApi.createUpgradeUrl(planId)
+      
+      if (response.approveUrl) {
+        window.location.href = response.approveUrl
+      } else {
+        toast.error('Không thể tạo link thanh toán')
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật gói dịch vụ')
+      toast.error(error instanceof Error ? error.message : 'Không thể kết nối đến cổng thanh toán')
     } finally {
       setChangingPlanId(null)
     }

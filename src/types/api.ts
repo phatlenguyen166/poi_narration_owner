@@ -135,3 +135,12 @@ export interface SaveDraftNarrationRequest {
   active?: boolean
   approvalStatus?: string
 }
+
+export interface CreatePaymentResponse {
+  approveUrl: string;
+}
+
+export interface CapturePaymentResponse {
+  isSuccess: boolean;
+  transactionId?: string;
+}
