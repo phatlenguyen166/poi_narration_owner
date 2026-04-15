@@ -333,7 +333,9 @@ export default function ShopFormPage() {
     } catch (error) {
       console.error(error);
       toast.error(
-        "Không thể lưu địa điểm. Vui lòng kiểm tra backend và thử lại.",
+        error instanceof Error
+          ? error.message
+          : "Không thể lưu địa điểm. Vui lòng kiểm tra backend và thử lại.",
       );
     } finally {
       setIsSubmitting(false);

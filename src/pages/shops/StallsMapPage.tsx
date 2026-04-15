@@ -16,6 +16,7 @@ export default function StallsMapPage() {
   const mapRef = useRef<MapRef>(null)
   
   const [selectedStall, setSelectedStall] = useState<Shop | null>(null)
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null)
   const [viewState, setViewState] = useState({
     longitude: 106.7009,
     latitude: 10.7769,
@@ -50,11 +51,22 @@ export default function StallsMapPage() {
   }, [shops])
 
   const handleGetCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error('Trình duyệt không hỗ trợ lấy vị trí hiện tại')
+      return
+    }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const nextLocation = {
+          longitude: pos.coords.longitude,
+          latitude: pos.coords.latitude,
+        }
+        setCurrentLocation(nextLocation)
+
         if (mapRef.current) {
           mapRef.current.flyTo({
-            center: [pos.coords.longitude, pos.coords.latitude],
+            center: [nextLocation.longitude, nextLocation.latitude],
             zoom: 15,
             duration: 1000,
           })
@@ -99,6 +111,19 @@ export default function StallsMapPage() {
             </div>
           </Marker>
         ))}
+
+        {currentLocation && (
+          <Marker
+            longitude={currentLocation.longitude}
+            latitude={currentLocation.latitude}
+            anchor="center"
+          >
+            <div className="relative flex h-5 w-5 items-center justify-center">
+              <div className="absolute h-5 w-5 rounded-full bg-blue-500/30 animate-ping" />
+              <div className="relative h-4 w-4 rounded-full border-2 border-white bg-blue-500 shadow-lg" />
+            </div>
+          </Marker>
+        )}
 
         {selectedStall && selectedStall.latitude && selectedStall.longitude && (
           <Popup

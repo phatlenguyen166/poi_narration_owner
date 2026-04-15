@@ -33,13 +33,13 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-md dark:shadow-none transition-all duration-300 relative',
+        'flex flex-col h-full bg-[rgba(255,251,245,0.96)] dark:bg-gray-900 border-r border-orange-100 dark:border-gray-700 shadow-xl shadow-orange-100/60 dark:shadow-none transition-all duration-300 relative backdrop-blur-xl',
         sidebarCollapsed ? 'w-16' : 'w-60'
       )}
     >
       {/* Logo */}
       <div className={cn(
-        'flex items-center gap-3 px-4 py-5 bg-gradient-to-br from-orange-500 to-amber-500',
+        'flex items-center gap-3 px-4 py-5 bg-gradient-to-br from-[#c7642e] via-[#d9773c] to-[#efb47a]',
         sidebarCollapsed ? 'justify-center' : ''
       )}>
         <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
@@ -63,8 +63,8 @@ export function Sidebar() {
               cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-orange-50 text-orange-700 ring-1 ring-orange-200'
-                  : 'text-gray-500 hover:bg-orange-50 hover:text-orange-700',
+                  ? 'bg-orange-100/80 text-[#9d481b] ring-1 ring-orange-200 shadow-sm'
+                  : 'text-gray-500 hover:bg-orange-50 hover:text-[#9d481b]',
                 sidebarCollapsed && 'justify-center'
               )
             }
@@ -77,7 +77,7 @@ export function Sidebar() {
       </nav>
 
       {/* User info */}
-      <div className="border-t border-gray-100 dark:border-gray-700 p-3 bg-gray-50/50 dark:bg-transparent">
+      <div className="border-t border-orange-100 dark:border-gray-700 p-3 bg-orange-50/50 dark:bg-transparent">
         {!sidebarCollapsed ? (
           <div className="flex items-center gap-3 mb-2">
             <img

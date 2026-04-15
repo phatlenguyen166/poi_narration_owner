@@ -1,14 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --brand-bg: #f6efe3;
+    --brand-surface: rgba(255, 251, 245, 0.94);
+    --brand-surface-strong: #fffaf2;
+    --brand-border: rgba(18, 49, 58, 0.12);
+    --brand-text: #17333b;
+    --brand-muted: rgba(23, 51, 59, 0.68);
+    --brand-accent: #c7642e;
+    --brand-accent-strong: #9d481b;
+    --brand-accent-soft: rgba(199, 100, 46, 0.12);
+    --brand-shadow: 0 18px 48px rgba(95, 69, 44, 0.12);
+  }
+
   html {
     @apply antialiased;
-    font-family: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Manrope", "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   }
 
   body {
-    @apply bg-slate-50 text-gray-900;
+    color: var(--brand-text);
+    background:
+      radial-gradient(circle at top left, rgba(239, 180, 122, 0.34), transparent 32%),
+      linear-gradient(180deg, #fff8ef 0%, var(--brand-bg) 100%);
   }
 
   .dark body {

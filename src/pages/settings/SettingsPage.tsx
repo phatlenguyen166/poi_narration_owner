@@ -14,7 +14,6 @@ import type { OwnerPlan } from '@/types'
 import OwnerProfileCard from './OwnerProfileCard'
 import { useOwnerSettings } from '@/hooks/useOwnerSettings'
 import { useUpdateOwnerNotifications } from '@/hooks/useUpdateOwnerNotifications'
-import { useChangeSubscription } from '@/hooks/useChangeSubscription'
 import { useChangePassword } from '@/hooks/useChangePassword'
 import { settingsApi } from '@/apis/settingsApi' 
 
@@ -39,7 +38,7 @@ const passwordSchema = z.object({
 type PasswordForm = z.infer<typeof passwordSchema>
 
 export default function SettingsPage() {
-  const { user, refreshProfile } = useAuthStore()
+  const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabId>('account')
   const [notifSettings, setNotifSettings] = useState({
     emailPlays: true,
@@ -50,7 +49,6 @@ export default function SettingsPage() {
   const { data: settings, isPending: settingsLoading } = useOwnerSettings()
   const [changingPlanId, setChangingPlanId] = useState<OwnerPlan['id'] | null>(null)
   const updateNotificationsMutation = useUpdateOwnerNotifications()
-  const changeSubscriptionMutation = useChangeSubscription()
   const changePasswordMutation = useChangePassword()
 
   const passwordForm = useForm<PasswordForm>({
@@ -251,7 +249,9 @@ export default function SettingsPage() {
                   'bg-white dark:bg-gray-800 rounded-xl border-2 p-5 transition-colors',
                   plan.current
                     ? 'border-orange-500 dark:border-orange-400'
-                    : 'border-gray-200 dark:border-gray-700',
+                    : plan.id === 'enterprise'
+                      ? 'border-sky-200 bg-sky-50/40 dark:border-sky-700 dark:bg-sky-900/10'
+                      : 'border-gray-200 dark:border-gray-700',
                 )}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -276,6 +276,11 @@ export default function SettingsPage() {
                   <Button
                     variant={plan.id === 'pro' ? 'primary' : 'outline'}
                     size="sm"
+                    className={
+                      plan.id === 'enterprise'
+                        ? 'border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 focus:ring-sky-400'
+                        : undefined
+                    }
                     loading={changingPlanId === plan.id}
                     onClick={() => void handleChangePlan(plan.id)}
                   >

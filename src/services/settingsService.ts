@@ -2,14 +2,15 @@ import { settingsApi } from '@/apis/settingsApi'
 import type { Owner, OwnerNotificationSettings, OwnerPlan, OwnerSettings, OwnerSettingsDto } from '@/types'
 
 const knownBrokenTextMap: Record<string, string> = {
-  'N�ng c�p ngay': 'Nâng cấp ngay',
-  'Th�ng k� nâng cao': 'Thống kê nâng cao',
-  'Th�ng k� n�ng cao': 'Thống kê nâng cao',
-  'Li�n h? t? v?n': 'Liên hệ tư vấn',
-  'G�i hi?n t?i': 'Gói hiện tại',
-  '0?/th�ng': '0đ/tháng',
-  '199,000?/th�ng': '199,000đ/tháng',
-  '/th�ng': '/tháng',
+  'N\uFFFDng c\uFFFDp ngay': 'Nâng cấp ngay',
+  'Th\uFFFDng k\uFFFD nâng cao': 'Thống kê nâng cao',
+  'Th\uFFFDng k\uFFFD n\uFFFDng cao': 'Thống kê nâng cao',
+  'Liên hệ tư vấn': 'Nâng cấp ngay',
+  'Li\uFFFDn h? t? v?n': 'Nâng cấp ngay',
+  'G\uFFFDi hi?n t?i': 'Gói hiện tại',
+  '0?/th\uFFFDng': '0đ/tháng',
+  '199,000?/th\uFFFDng': '199,000đ/tháng',
+  '/th\uFFFDng': '/tháng',
   '0?': '0đ',
   '199,000?': '199,000đ',
 }
@@ -23,7 +24,7 @@ const fixMojibake = (value?: string | null): string => {
   }
 
   // Heuristic: common UTF-8-as-Latin1 artifacts for Vietnamese text/currency (e.g. "â‚«", "Ä‘", "Ã´").
-  if (!/[ÃÂÄâ�]/.test(input)) return input
+  if (!/[ÃÂÄâ\uFFFD]/.test(input)) return input
 
   try {
     const bytes = new Uint8Array(input.length)

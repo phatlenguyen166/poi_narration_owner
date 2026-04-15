@@ -27,7 +27,7 @@ export function Header({ breadcrumbs = [] }: HeaderProps) {
   }, [fetchDashboard])
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none flex-shrink-0">
+    <header className="h-14 flex items-center justify-between px-4 bg-[rgba(255,251,245,0.86)] dark:bg-gray-900 border-b border-orange-100 dark:border-gray-700 shadow-sm shadow-orange-100/60 dark:shadow-none flex-shrink-0 backdrop-blur-xl">
       {/* Left */}
       <div className="flex items-center gap-3">
         <button
