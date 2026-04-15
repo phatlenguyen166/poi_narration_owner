@@ -76,4 +76,8 @@ export interface QrCodePayload {
   targetType?: string
   targetId?: string
   resolvedUrl: string
+  status?: string
+  createdAt?: string
+  startsAt?: string
+  expiresAt?: string
 }

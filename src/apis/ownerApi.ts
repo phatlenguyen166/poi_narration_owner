@@ -89,6 +89,17 @@ export const ownerApi = {
     return apiClient.request<QrCodePayload>(`/api/v1/owner/stalls/${stallId}/qr`)
   },
 
+  createQrCode(stallId: string, payload?: { expiresInDays?: number; startsAt?: string; expiresAt?: string }) {
+    return apiClient.request<QrCodePayload>(`/api/v1/owner/stalls/${stallId}/qr`, {
+      method: 'POST',
+      body: {
+        expiresInDays: payload?.expiresInDays ?? 30,
+        startsAt: payload?.startsAt ?? null,
+        expiresAt: payload?.expiresAt ?? null,
+      },
+    })
+  },
+
   getAnalytics(stallId: string) {
     return apiClient.request<AnalyticsDto>(`/api/v1/owner/stalls/${stallId}/analytics`)
   },

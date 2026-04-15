@@ -219,6 +219,10 @@ export const ownerService = {
     return ownerApi.getQrCode(stallId)
   },
 
+  createQrCode(stallId: string, payload?: { expiresInDays?: number; startsAt?: string; expiresAt?: string }): Promise<QrCodePayload> {
+    return ownerApi.createQrCode(stallId, payload)
+  },
+
   async getAnalytics(stallId: string) {
     const response = await ownerApi.getAnalytics(stallId)
     return mapAnalytics(stallId, response)

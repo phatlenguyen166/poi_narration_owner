@@ -84,6 +84,7 @@ export interface ShopState {
   saveAnalytics: (shopId: string, analytics: ShopAnalyticsState) => void
   fetchAnalytics: (shopId: string) => Promise<ShopAnalyticsState>
   fetchQrCode: (shopId: string) => Promise<QrCodePayload>
+  createQrCode: (shopId: string, payload?: { expiresInDays?: number; startsAt?: string; expiresAt?: string }) => Promise<QrCodePayload>
 }
 
 export interface UIState {

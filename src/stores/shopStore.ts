@@ -142,4 +142,15 @@ export const useShopStore = create<ShopState>()((set, get) => ({
     }))
     return qrCode
   },
+
+  createQrCode: async (shopId, payload) => {
+    const qrCode = await ownerService.createQrCode(shopId, payload)
+    set((state) => ({
+      qrCodes: {
+        ...state.qrCodes,
+        [shopId]: qrCode,
+      },
+    }))
+    return qrCode
+  },
 }))
